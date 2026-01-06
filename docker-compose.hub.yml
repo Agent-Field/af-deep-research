@@ -1,0 +1,40 @@
+# AF Deep Research - Docker Hub Version
+#
+# Use this file to run with pre-built images from Docker Hub.
+# No local build required - just configure .env and run:
+#   docker-compose -f docker-compose.hub.yml up -d
+
+services:
+  agentfield:
+    image: ghcr.io/agent-field/agentfield-control-plane:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - AGENTFIELD_HTTP_ADDR=0.0.0.0:8080
+      - AGENTFIELD_STORAGE_MODE=local
+    volumes:
+      - agentfield-data:/data
+    restart: unless-stopped
+
+  deep-research:
+    image: agentfield/af-deep-research:latest
+    environment:
+      - AGENTFIELD_SERVER=http://agentfield:8080
+      - PORT=8001
+      - AGENT_CALLBACK_URL=http://deep-research:8001
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - JINA_API_KEY=${JINA_API_KEY:-}
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY:-}
+      - SERPER_API_KEY=${SERPER_API_KEY:-}
+      - SEARCH_PROVIDER=${SEARCH_PROVIDER:-}
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-openrouter/deepseek/deepseek-chat-v3.1}
+      - TEMPERATURE=${TEMPERATURE:-0.6}
+    ports:
+      - "8001:8001"
+    depends_on:
+      - agentfield
+    restart: unless-stopped
+
+volumes:
+  agentfield-data:

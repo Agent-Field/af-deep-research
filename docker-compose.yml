@@ -1,0 +1,64 @@
+# Deep Research Agent - Docker Compose
+#
+# Quick Start:
+#   1. Copy .env.example to .env and add your API keys
+#   2. Run: docker-compose up
+#   3. Access UI: http://localhost:8080
+#   4. Execute research via API or UI
+#
+# Required API Keys (set in .env):
+#   - OPENROUTER_API_KEY: For LLM inference (https://openrouter.ai/keys)
+#   - At least ONE search provider: JINA_API_KEY, TAVILY_API_KEY, FIRECRAWL_API_KEY, or SERPER_API_KEY
+
+services:
+  # Agent Field Control Plane
+  agentfield:
+    image: ghcr.io/agent-field/agentfield-control-plane:latest
+    container_name: agentfield-server
+    ports:
+      - "8080:8080"
+    environment:
+      - AGENTFIELD_HTTP_ADDR=0.0.0.0:8080
+      - AGENTFIELD_STORAGE_MODE=local
+    volumes:
+      - agentfield-data:/data
+    restart: unless-stopped
+
+  # Deep Research Agent
+  deep-research:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: deep-research-agent
+    environment:
+      # Agent Field connection
+      - AGENTFIELD_SERVER=http://agentfield:8080
+      - PORT=8001
+      # Callback URL for control plane to reach this agent
+      - AGENT_CALLBACK_URL=http://deep-research:8001
+      # LLM API Key (from .env file)
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # Web Search API Keys (configure at least one)
+      - JINA_API_KEY=${JINA_API_KEY:-}
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY:-}
+      - SERPER_API_KEY=${SERPER_API_KEY:-}
+      # Optional: Force specific search provider
+      - SEARCH_PROVIDER=${SEARCH_PROVIDER:-}
+      # Model configuration
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-openrouter/deepseek/deepseek-chat-v3.1}
+      - TEMPERATURE=${TEMPERATURE:-0.6}
+    ports:
+      - "8001:8001"
+    depends_on:
+      - agentfield
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+volumes:
+  agentfield-data:
