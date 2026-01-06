@@ -46,7 +46,7 @@ End-to-end AI-powered deep research. One query, full document output with real-t
                                   │
                                   ▼
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│    OpenRouter (LLM)  •  Jina AI / Tavily / Firecrawl / Serper (Search)      │
+│  OpenRouter or Ollama (LLM)  •  Jina AI / Tavily / Firecrawl / Serper (Search)  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -397,7 +397,8 @@ data: {"type":"note","workflow_id":"run_xyz789","data":{"message":"Processing st
 
 | Variable             | Required     | Description                                                   |
 | -------------------- | ------------ | ------------------------------------------------------------- |
-| `OPENROUTER_API_KEY` | Yes          | LLM API key                                                   |
+| `OPENROUTER_API_KEY` | Yes*         | LLM API key (*not required when using Ollama)                 |
+| `OLLAMA_BASE_URL`    | No           | Local Ollama server URL (e.g., `http://host.docker.internal:11434`) |
 | `JINA_API_KEY`       | One of these | Jina AI search                                                |
 | `TAVILY_API_KEY`     | One of these | Tavily search                                                 |
 | `FIRECRAWL_API_KEY`  | One of these | Firecrawl                                                     |
@@ -465,6 +466,51 @@ The deep research system requires models that can:
 - Process long context (research synthesis)
 
 All recommended models above meet these requirements. Smaller models (< 7B parameters) may struggle with the JSON schema complexity.
+
+## Local Ollama Configuration
+
+You can use a local [Ollama](https://ollama.ai) deployment instead of OpenRouter. This is useful for:
+
+- Air-gapped environments
+- Cost savings with local hardware
+- Testing with self-hosted LLaMA models
+
+### Setup
+
+1. **Start Ollama** on your host machine with a model:
+
+```bash
+ollama run llama3.2
+```
+
+2. **Configure your `.env`**:
+
+```bash
+# Point to Ollama (use host.docker.internal for Docker to reach host)
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+DEFAULT_MODEL=ollama/llama3.2
+
+# OpenRouter key not needed when using Ollama
+# OPENROUTER_API_KEY=...
+```
+
+3. **Restart the service**:
+
+```bash
+docker-compose down && docker-compose up -d
+```
+
+### Recommended Ollama Models
+
+| Model | Command | Parameters | Notes |
+| ----- | ------- | ---------- | ----- |
+| Llama 3.2 | `ollama run llama3.2` | 3B | Fast, good for testing |
+| Llama 3.1 8B | `ollama run llama3.1:8b` | 8B | Good balance |
+| Llama 3.1 70B | `ollama run llama3.1:70b` | 70B | High quality (needs ~40GB VRAM) |
+| Qwen 2.5 72B | `ollama run qwen2.5:72b` | 72B | Excellent structured output |
+| DeepSeek R1 | `ollama run deepseek-r1:14b` | 14B | Reasoning model |
+
+> **Note**: For Docker deployments, use `host.docker.internal` instead of `localhost` to reach Ollama running on your host machine.
 
 ## Troubleshooting
 

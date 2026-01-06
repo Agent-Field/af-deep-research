@@ -169,11 +169,20 @@ ADJUDICATION_BATCH_SIZE = 50
 ENTITY_BATCH_SIZE = 10
 
 # --- AI Configuration & Agent Setup ---
+# Build litellm_params - supports local Ollama deployments
+litellm_params = {"drop_params": True}
+
+# If OLLAMA_BASE_URL is set, configure for local Ollama deployment
+ollama_base_url = os.getenv("OLLAMA_BASE_URL")
+if ollama_base_url:
+    litellm_params["api_base"] = ollama_base_url
+    print(f"🦙 Using local Ollama at: {ollama_base_url}")
+
 ai_config = AIConfig(
     model=os.getenv("DEFAULT_MODEL", "openrouter/deepseek/deepseek-chat-v3.1"),
     temperature=float(os.getenv("TEMPERATURE", "0.6")),
     max_tokens=8192,
-    litellm_params={"drop_params": True},
+    litellm_params=litellm_params,
 )
 
 app = Agent(
