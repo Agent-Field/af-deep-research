@@ -8,6 +8,7 @@
 #
 # Required API Keys (set in .env):
 #   - OPENROUTER_API_KEY: For LLM inference (https://openrouter.ai/keys)
+#     OR use local Ollama: set OLLAMA_BASE_URL and DEFAULT_MODEL=ollama/<model>
 #   - At least ONE search provider: JINA_API_KEY, TAVILY_API_KEY, FIRECRAWL_API_KEY, or SERPER_API_KEY
 
 services:
@@ -48,6 +49,8 @@ services:
       # Model configuration
       - DEFAULT_MODEL=${DEFAULT_MODEL:-openrouter/deepseek/deepseek-chat-v3.1}
       - TEMPERATURE=${TEMPERATURE:-0.6}
+      # Optional: Local Ollama configuration (set OLLAMA_BASE_URL to use local LLM)
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
     ports:
       - "8001:8001"
     depends_on:
