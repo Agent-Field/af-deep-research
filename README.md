@@ -127,6 +127,8 @@ docker-compose -f docker-compose.hub.yml up -d
 
 You get back an `execution_id`. Stream progress via SSE while it runs, then fetch the results when it's done.
 
+Open [localhost:8080/ui](http://localhost:8080/ui) to watch the workflow run in real-time—see agents spawning, research cycles iterating, and results flowing in.
+
 ## Build on it
 
 This is an API. Pull exactly the parts you need:
