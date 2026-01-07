@@ -13,7 +13,7 @@
 
 Most research tools search once and summarize. You've used them. You know the pattern: ask a question, get a paragraph, move on. But real research doesn't work that way. Real research finds something, realizes what's missing, goes back, digs deeper, connects dots across sources.
 
-That's what this does. You send a query. The system spawns thousands of parallel agents—entity extractors, relationship mappers, evidence gatherers—all working simultaneously. When gaps are found, more agents spin up to fill them. Three iterative cycles later, you get structured data back: typed entities, mapped relationships, traced evidence, and a cited document.
+That's what this does. You send a query. The system spawns thousands of parallel agents—entity extractors, relationship mappers, evidence gatherers—all working simultaneously. When gaps are found, more agents spin up to fill them. Few dynamic iterative cycles later, you get structured data back: typed entities, mapped relationships, traced evidence, and a cited document.
 
 It's not a chatbot. It's an [AI backend](https://www.agentfield.ai/blog/posts/ai-backend)—infrastructure that returns structured data for your applications.
 
