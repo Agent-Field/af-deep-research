@@ -1,6 +1,6 @@
 <p align="center">
-  <h1 align="center">Deep Research</h1>
-  <p align="center">Autonomous research that keeps digging until the question is actually answered.</p>
+  <h1 align="center">AF Deep Research</h1>
+  <p align="center">Autonomous research backend for AI applications.</p>
 </p>
 <p align="center">
   <a href="https://github.com/Agent-Field/af-deep-research/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
@@ -15,11 +15,19 @@ Most research tools search once and summarize. You've used them. You know the pa
 
 That's what this does. You send a query. The system spawns thousands of parallel agents—entity extractors, relationship mappers, evidence gatherers—all working simultaneously. When gaps are found, more agents spin up to fill them. Three iterative cycles later, you get structured data back: typed entities, mapped relationships, traced evidence, and a cited document.
 
-It's not a chatbot. It's research infrastructure you can build on.
+It's not a chatbot. It's an [AI backend](https://www.agentfield.ai/blog/posts/ai-backend)—infrastructure that returns structured data for your applications.
 
-## The output
+## How it works
 
-Here's what comes back from a single query about AI chip investments:
+**You call the API:**
+
+```bash
+curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execute_deep_research \
+  -H "Content-Type: application/json" \
+  -d '{"input": {"query": "What companies are investing in AI chips?"}}'
+```
+
+**You get back structured research:**
 
 **Entities** — typed and summarized. Companies, investors, executives, technologies, market trends.
 
@@ -99,7 +107,7 @@ There's a gap between "ask ChatGPT" and "hire a research analyst." ChatGPT gives
 
 This sits in the middle. It runs for 15 minutes instead of 15 seconds, but it iterates, it cites, it structures. And because it's an API, you can embed it in your own applications—due diligence tools, competitive intelligence dashboards, market research pipelines.
 
-| | Deep Research | ChatGPT / Perplexity |
+| | AF Deep Research | ChatGPT / Perplexity |
 |---|---|---|
 | Process | Iterative (finds gaps, researches more) | Single pass |
 | Entities | Typed (Company, Investor, Technology) | None |
@@ -111,20 +119,10 @@ This sits in the middle. It runs for 15 minutes instead of 15 seconds, but it it
 
 ## Getting started
 
-Clone it, configure your API keys, start it up:
-
 ```bash
 git clone https://github.com/Agent-Field/af-deep-research.git && cd af-deep-research
 cp .env.example .env
 docker-compose -f docker-compose.hub.yml up -d
-```
-
-Then run a query:
-
-```bash
-curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execute_deep_research \
-  -H "Content-Type: application/json" \
-  -d '{"input": {"query": "What companies are most exposed to rising interest rates?"}}'
 ```
 
 You get back an `execution_id`. Stream progress via SSE while it runs, then fetch the results when it's done.
@@ -184,7 +182,7 @@ No telemetry. No phone home. Your queries and your data stay on your infrastruct
 
 ## The stack
 
-Deep Research runs on [AgentField](https://github.com/Agent-Field/agentfield), open-source infrastructure for production AI agents. That's what makes the long-running, multi-agent orchestration possible. Workflows run for 16+ minutes without timeout. Progress streams via SSE. Results persist. Audit trails are cryptographically signed if you need compliance.
+AF Deep Research runs on [AgentField](https://github.com/Agent-Field/agentfield), open-source infrastructure for production AI agents. That's what makes the long-running, multi-agent orchestration possible. Workflows run for 16+ minutes without timeout. Progress streams via SSE. Results persist. Audit trails are cryptographically signed if you need compliance.
 
 <p align="center">
   <a href="https://github.com/Agent-Field/agentfield"><img src="https://img.shields.io/badge/Powered%20by-AgentField-8A2BE2?style=for-the-badge" alt="AgentField"></a>
