@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/Agent-Field/af-deep-research/stargazers"><img src="https://img.shields.io/github/stars/Agent-Field/af-deep-research?style=social" alt="Stars"></a>
-  <a href="https://github.com/Agent-Field/af-deep-research/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <a href="https://github.com/Agent-Field/af-deep-research/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
   <a href="https://github.com/Agent-Field/agentfield"><img src="https://img.shields.io/badge/built%20on-AgentField-8A2BE2" alt="Built on AgentField"></a>
 </p>
 
@@ -308,7 +308,7 @@ Open an issue, drop a message in Discord, or just star the repo and ship.
 
 ## License
 
-MIT
+Apache 2.0
 
 ---
 
