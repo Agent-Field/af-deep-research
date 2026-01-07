@@ -29,7 +29,10 @@ curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execu
 
 **You get back structured research:**
 
-**Entities** — typed and summarized. Companies, investors, executives, technologies, market trends.
+<details>
+<summary><b>Entities</b> — typed and summarized</summary>
+
+Companies, investors, executives, technologies, market trends.
 
 ```json
 {
@@ -43,7 +46,12 @@ curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execu
 }
 ```
 
-**Relationships** — who competes with whom, who invested in what, who acquired who. The kind of connections that take hours to map manually.
+</details>
+
+<details>
+<summary><b>Relationships</b> — who connects to whom</summary>
+
+Competitors, investors, acquirers, partners. The kind of connections that take hours to map manually.
 
 ```json
 {
@@ -56,7 +64,12 @@ curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execu
 }
 ```
 
-**Evidence** — every claim traced to source. Facts extracted. Quotes captured. Nothing hallucinated.
+</details>
+
+<details>
+<summary><b>Evidence</b> — every claim traced to source</summary>
+
+Facts extracted. Quotes captured. Nothing hallucinated.
 
 ```json
 {
@@ -71,7 +84,12 @@ curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execu
 }
 ```
 
-**Document** — a hierarchical research report with sections, citations, and bibliography. If you just want to read something, this is ready to go.
+</details>
+
+<details>
+<summary><b>Document</b> — hierarchical research report</summary>
+
+Sections, citations, and bibliography. Ready to read or render.
 
 ```json
 {
@@ -87,7 +105,12 @@ curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execu
 }
 ```
 
-**Metadata** — quality scores, timing, iteration counts. Use these for quality gates in your pipeline.
+</details>
+
+<details>
+<summary><b>Metadata</b> — quality scores and timing</summary>
+
+Use these for quality gates in your pipeline.
 
 ```json
 {
@@ -100,6 +123,8 @@ curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execu
   }
 }
 ```
+
+</details>
 
 ## Why this exists
 
@@ -117,7 +142,7 @@ This sits in the middle. It runs for 15 minutes instead of 15 seconds, but it it
 | Integration | REST API + SSE streaming | Chat window |
 | Hosting | Self-host, local LLMs, air-gapped | SaaS only |
 
-## Getting started
+## 🚀 Getting started
 
 ```bash
 git clone https://github.com/Agent-Field/af-deep-research.git && cd af-deep-research
@@ -127,9 +152,9 @@ docker-compose -f docker-compose.hub.yml up -d
 
 You get back an `execution_id`. Stream progress via SSE while it runs, then fetch the results when it's done.
 
-Open [localhost:8080/ui](http://localhost:8080/ui) to watch the workflow run in real-time—see agents spawning, research cycles iterating, and results flowing in.
+> 💡 **Tip:** Open [localhost:8080/ui](http://localhost:8080/ui) to watch the workflow run live—see agents spawning, research cycles iterating, and results flowing in.
 
-## Build on it
+## 🔧 Build on it
 
 This is an API. Pull exactly the parts you need:
 
@@ -168,7 +193,7 @@ OLLAMA_BASE_URL=http://host.docker.internal:11434
 DEFAULT_MODEL=ollama/llama3.2
 ```
 
-No telemetry. No phone home. Your queries and your data stay on your infrastructure.
+> 🔒 **Privacy:** No telemetry. No phone home. Your queries and your data stay on your infrastructure.
 
 <details>
 <summary>Model options</summary>
