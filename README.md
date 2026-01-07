@@ -17,8 +17,6 @@ That's what this does. You send a query. The system spawns thousands of parallel
 
 It's not a chatbot. It's research infrastructure you can build on.
 
----
-
 ## The output
 
 Here's what comes back from a single query about AI chip investments:
@@ -95,8 +93,6 @@ Here's what comes back from a single query about AI chip investments:
 }
 ```
 
----
-
 ## Why this exists
 
 There's a gap between "ask ChatGPT" and "hire a research analyst." ChatGPT gives you a paragraph in seconds but hallucinates and doesn't cite. An analyst gives you a 20-page report with sources but takes days and costs thousands.
@@ -112,8 +108,6 @@ This sits in the middle. It runs for 15 minutes instead of 15 seconds, but it it
 | Document | Hierarchical sections + bibliography | Flat text |
 | Integration | REST API + SSE streaming | Chat window |
 | Hosting | Self-host, local LLMs, air-gapped | SaaS only |
-
----
 
 ## Getting started
 
@@ -135,8 +129,6 @@ curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execu
 
 You get back an `execution_id`. Stream progress via SSE while it runs, then fetch the results when it's done.
 
----
-
 ## Build on it
 
 This is an API. Pull exactly the parts you need:
@@ -153,8 +145,6 @@ The SSE stream lets you build real-time UIs. Show users the research happening: 
 curl -N http://localhost:8080/api/ui/v1/workflows/{run_id}/notes/events
 ```
 
----
-
 ## Parameters
 
 Control depth, breadth, and perspective:
@@ -168,8 +158,6 @@ Control depth, breadth, and perspective:
 | `source_strictness` | `strict`, `mixed`, or `permissive` source filtering. |
 
 Set `tension_lens: "bear"` when you want the system to dig for risks and red flags. Set `source_strictness: "strict"` to filter to reputable sources only.
-
----
 
 ## Run locally
 
@@ -194,8 +182,6 @@ No telemetry. No phone home. Your queries and your data stay on your infrastruct
 
 </details>
 
----
-
 ## The stack
 
 Deep Research runs on [AgentField](https://github.com/Agent-Field/agentfield), open-source infrastructure for production AI agents. That's what makes the long-running, multi-agent orchestration possible. Workflows run for 16+ minutes without timeout. Progress streams via SSE. Results persist. Audit trails are cryptographically signed if you need compliance.
@@ -203,8 +189,6 @@ Deep Research runs on [AgentField](https://github.com/Agent-Field/agentfield), o
 <p align="center">
   <a href="https://github.com/Agent-Field/agentfield"><img src="https://img.shields.io/badge/Powered%20by-AgentField-8A2BE2?style=for-the-badge" alt="AgentField"></a>
 </p>
-
----
 
 ## Examples
 
@@ -216,25 +200,19 @@ A few queries to try:
 | Competitive intel | `"How is AMD positioning against NVIDIA in AI chips?"` |
 | Market research | `"What's driving growth in the weight loss drug market?"` |
 
----
-
 ## Links
 
 - **Docs** — [agentfield.ai/docs](https://agentfield.ai/docs)
 - **GitHub** — [Agent-Field/agentfield](https://github.com/Agent-Field/agentfield)
 - **Discord** — [Join the community](https://discord.com/invite/aBHaXMkpqh)
 
----
-
 ## Contribute
 
 This is an early preview. We're actively developing and want feedback. File issues, open PRs, or come chat in [Discord](https://discord.com/invite/aBHaXMkpqh).
 
----
-
-Apache 2.0
+<br>
 
 <p align="center">
   <a href="https://github.com/Agent-Field/af-deep-research">Star if this saves you research time</a><br>
-  <sub>Built by <a href="https://agentfield.ai">AgentField</a></sub>
+  <sub>Built by <a href="https://agentfield.ai">AgentField</a> · <a href="https://github.com/Agent-Field/af-deep-research/blob/main/LICENSE">Apache 2.0</a></sub>
 </p>
