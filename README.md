@@ -7,32 +7,30 @@
   <a href="https://github.com/Agent-Field/agentfield"><img src="https://img.shields.io/badge/built%20on-AgentField-8A2BE2" alt="Built on AgentField"></a>
   <a href="https://discord.com/invite/aBHaXMkpqh"><img src="https://img.shields.io/badge/Discord-Join-7289da" alt="Discord"></a>
 </p>
-<p align="center"><b>Early Preview</b> — APIs may change. Feedback welcome.</p>
+<p align="center"><b>Early Preview</b> · APIs may change. Feedback welcome.</p>
 
 ---
 
-Most research tools search once and summarize. You've used them. You know the pattern: ask a question, get a paragraph, move on. But real research doesn't work that way. Real research finds something, realizes what's missing, goes back, digs deeper, connects dots across sources.
+A research API that questions itself. Submit a query. The system analyzes complexity, spawns parallel agents (entity extractors, relationship mappers, evidence gatherers), then evaluates what it found against quality thresholds. When gaps are detected, it generates new sub-queries and runs another cycle. After three iterations, you get structured JSON: typed entities, mapped relationships, evidence with source URLs, and a hierarchical document with citations.
 
-That's what this does. You send a query. The system spawns thousands of parallel agents—entity extractors, relationship mappers, evidence gatherers—all working simultaneously. When gaps are found, more agents spin up to fill them. Few dynamic iterative cycles later, you get structured data back: typed entities, mapped relationships, traced evidence, and a cited document.
+The architecture orchestrates ~10,000 logical agent invocations per research across iterations and parallel streams. Each cycle includes gap analysis ("what's missing?"), targeted query generation, and quality-driven continuation decisions. The system asks itself questions and answers them.
 
-It's not a chatbot. It's an [AI backend](https://www.agentfield.ai/blog/posts/ai-backend)—infrastructure that returns structured data for your applications.
+Output is structured for programmatic consumption: `entities[]` routes to your graph database, `relationships[]` populates Neo4j edges, `article_evidence[]` feeds compliance pipelines. This is an [AI backend](https://www.agentfield.ai/blog/posts/ai-backend), not a chat interface.
 
-## How it works
+## Output
 
-**You call the API:**
+The API returns a research package with five components:
 
-```bash
-curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execute_deep_research \
-  -H "Content-Type: application/json" \
-  -d '{"input": {"query": "What companies are investing in AI chips?"}}'
-```
-
-**You get back structured research:**
+| Component | Contents |
+|-----------|----------|
+| `entities` | Typed objects: Company, Investor, Founder, Technology, Market_Trend, Metric |
+| `relationships` | Edges: Competes_With, Invests_In, Partners_With, Founded_By, Acquires |
+| `article_evidence` | Facts and quotes with source article IDs |
+| `document` | Hierarchical sections with inline citations and bibliography |
+| `metadata` | iterations_completed, total_entities, total_relationships, final_quality_score |
 
 <details>
-<summary><b>Entities</b> — typed and summarized</summary>
-
-Companies, investors, executives, technologies, market trends.
+<summary><b>Entities</b></summary>
 
 ```json
 {
@@ -49,9 +47,7 @@ Companies, investors, executives, technologies, market trends.
 </details>
 
 <details>
-<summary><b>Relationships</b> — who connects to whom</summary>
-
-Competitors, investors, acquirers, partners. The kind of connections that take hours to map manually.
+<summary><b>Relationships</b></summary>
 
 ```json
 {
@@ -67,9 +63,7 @@ Competitors, investors, acquirers, partners. The kind of connections that take h
 </details>
 
 <details>
-<summary><b>Evidence</b> — every claim traced to source</summary>
-
-Facts extracted. Quotes captured. Nothing hallucinated.
+<summary><b>Evidence</b></summary>
 
 ```json
 {
@@ -79,7 +73,7 @@ Facts extracted. Quotes captured. Nothing hallucinated.
       "NVIDIA datacenter revenue reached $18.4B in Q4",
       "H100 backlog extends into late 2025"
     ],
-    "quotes": ["We are seeing unprecedented demand — Jensen Huang"]
+    "quotes": ["We are seeing unprecedented demand - Jensen Huang"]
   }]
 }
 ```
@@ -87,9 +81,7 @@ Facts extracted. Quotes captured. Nothing hallucinated.
 </details>
 
 <details>
-<summary><b>Document</b> — hierarchical research report</summary>
-
-Sections, citations, and bibliography. Ready to read or render.
+<summary><b>Document</b></summary>
 
 ```json
 {
@@ -108,9 +100,7 @@ Sections, citations, and bibliography. Ready to read or render.
 </details>
 
 <details>
-<summary><b>Metadata</b> — quality scores and timing</summary>
-
-Use these for quality gates in your pipeline.
+<summary><b>Metadata</b></summary>
 
 ```json
 {
@@ -126,53 +116,94 @@ Use these for quality gates in your pipeline.
 
 </details>
 
-## Why this exists
+## How it works
 
-There's a gap between "ask ChatGPT" and "hire a research analyst." ChatGPT gives you a paragraph in seconds but hallucinates and doesn't cite. An analyst gives you a 20-page report with sources but takes days and costs thousands.
+<p align="center">
+  <img src="assets/archi.png" alt="AF Deep Research Architecture" width="100%">
+</p>
 
-This sits in the middle. It runs for 15 minutes instead of 15 seconds, but it iterates, it cites, it structures. And because it's an API, you can embed it in your own applications—due diligence tools, competitive intelligence dashboards, market research pipelines.
+## What makes this different
 
-| | AF Deep Research | ChatGPT / Perplexity |
+Traditional research: one query → retrieve → summarize → done.
+
+This system: **fan out → filter down → synthesize → find gaps → fan out again.**
+
+<p align="center">
+  <img src="assets/process.png" alt="Traditional vs AF Deep Research" width="100%">
+</p>
+
+Multiple parallel streams explore different angles simultaneously. Each stream filters aggressively—only hyper-relevant evidence survives. Cross-stream synthesis finds patterns. Gap analysis identifies what's missing. New targeted streams spawn. The cycle repeats until quality threshold is met.
+
+| | Perplexity / ChatGPT | AF Deep Research |
 |---|---|---|
-| Process | Iterative (finds gaps, researches more) | Single pass |
-| Entities | Typed (Company, Investor, Technology) | None |
-| Relationships | Mapped (Competes_With, Invests_In) | None |
-| Evidence | Facts + quotes with source URLs | Basic citations |
-| Document | Hierarchical sections + bibliography | Flat text |
-| Integration | REST API + SSE streaming | Chat window |
-| Hosting | Self-host, local LLMs, air-gapped | SaaS only |
+| **Research process** | One-shot generation | Self-correcting loops that ask "what am I missing?" |
+| **Search coverage** | Single query | Multiple parallel streams, each exploring a different angle |
+| **What you get back** | Prose with inline links | Structured JSON: typed entities, mapped relationships, cited evidence |
+| **Context quality** | Everything retrieved goes to the LLM | Two-tier filtering so only hyper-relevant content reaches the model |
+| **Relationship discovery** | Mentioned if obvious | Multi-pass extraction: explicit → implied → indirect → emergent patterns |
+| **Scaling** | Fixed behavior | Width and depth scale with query complexity |
+| **Integration** | Copy-paste from chat | REST API, SSE streaming, webhook-ready |
+| **Deployment** | SaaS only | Self-host with local LLMs, air-gapped option |
 
-## 🚀 Getting started
+### Why it works
+
+- **Context pollution kills quality.** When you dump 50 web pages into an LLM, important facts get buried and the model hallucinates connections. We filter aggressively—hash dedup, semantic dedup, relevance scoring—so only the best evidence reaches synthesis.
+
+- **Width AND depth.** Traditional tools go broad OR deep. This system scales both: `research_scope` controls parallel streams, `research_focus` controls analysis depth. Simple queries get fewer streams; complex queries spawn more.
+
+- **Quality-driven, not count-driven.** The system doesn't run exactly 3 iterations. After each pass it asks: what entities are missing? what relationships are unclear? what claims lack evidence? If gaps exist and are addressable, it continues. If quality threshold is met, it stops.
+
+- **Cross-stream patterns.** The synthesis layer doesn't summarize streams separately—it finds connections between them. A market trend that explains a technical pivot. A team background that validates a GTM strategy.
+
+## Quick start
 
 ```bash
 git clone https://github.com/Agent-Field/af-deep-research.git && cd af-deep-research
 cp .env.example .env
+# Add API keys to .env
 docker-compose -f docker-compose.hub.yml up -d
 ```
 
-You get back an `execution_id`. Stream progress via SSE while it runs, then fetch the results when it's done.
-
-> 💡 **Tip:** Open [localhost:8080/ui](http://localhost:8080/ui) to watch the workflow run live—see agents spawning, research cycles iterating, and results flowing in.
-
-## 🔧 Build on it
-
-This is an API. Pull exactly the parts you need:
-
-- `response.research_package.entities` — pipe to your graph database
-- `response.research_package.relationships` — feed to Neo4j
-- `response.research_package.sections` — render in your UI
-- `response.research_package.source_notes` — show bibliography
-- `response.metadata` — use quality scores as gates
-
-The SSE stream lets you build real-time UIs. Show users the research happening: "Found 34 articles... Extracting entities... Gap detected, researching funding data..."
-
 ```bash
-curl -N http://localhost:8080/api/ui/v1/workflows/{run_id}/notes/events
+curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execute_deep_research \
+  -H "Content-Type: application/json" \
+  -d '{"input": {"query": "What companies are investing in AI chips?"}}'
+```
+
+Returns `execution_id`. Stream progress via SSE, fetch results when complete.
+
+> Open [localhost:8080/ui](http://localhost:8080/ui) to watch the workflow live.
+
+## API
+
+**Submit:** `POST /api/v1/execute/async/meta_deep_research.execute_deep_research`
+
+**Stream progress:** `GET /api/ui/v1/workflows/{execution_id}/notes/events` (SSE)
+
+**Fetch results:** `GET /api/v1/executions/{execution_id}/result`
+
+### Accessing response data
+
+```python
+response = fetch_results(execution_id)
+
+# Graph data
+entities = response["research_package"]["entities"]
+relationships = response["research_package"]["relationships"]
+
+# Evidence for audits
+evidence = response["research_package"]["article_evidence"]
+
+# Document for rendering
+sections = response["research_package"]["document"]["sections"]
+bibliography = response["research_package"]["document"]["source_notes"]
+
+# Quality gates
+if response["metadata"]["final_quality_score"] < 0.7:
+    trigger_human_review()
 ```
 
 ## Parameters
-
-Control depth, breadth, and perspective:
 
 | Parameter | What it does |
 |-----------|--------------|
@@ -182,18 +213,18 @@ Control depth, breadth, and perspective:
 | `tension_lens` | `balanced`, `bull`, or `bear` perspective. |
 | `source_strictness` | `strict`, `mixed`, or `permissive` source filtering. |
 
-Set `tension_lens: "bear"` when you want the system to dig for risks and red flags. Set `source_strictness: "strict"` to filter to reputable sources only.
+Set `tension_lens: "bear"` for risk-focused analysis. Set `source_strictness: "strict"` to filter to reputable sources only.
 
-## Run locally
+## Local LLMs
 
-Don't want API calls leaving your network? Point at Ollama:
+To keep everything on your network:
 
 ```bash
 OLLAMA_BASE_URL=http://host.docker.internal:11434
 DEFAULT_MODEL=ollama/llama3.2
 ```
 
-> 🔒 **Privacy:** No telemetry. No phone home. Your queries and your data stay on your infrastructure.
+> No telemetry. Your data stays on your infrastructure.
 
 <details>
 <summary>Model options</summary>
@@ -209,7 +240,7 @@ DEFAULT_MODEL=ollama/llama3.2
 
 ## The stack
 
-AF Deep Research runs on [AgentField](https://github.com/Agent-Field/agentfield), open-source infrastructure for production AI agents. That's what makes the long-running, multi-agent orchestration possible. Workflows run for 16+ minutes without timeout. Progress streams via SSE. Results persist. Audit trails are cryptographically signed if you need compliance.
+Runs on [AgentField](https://github.com/Agent-Field/agentfield), open-source infrastructure for production AI agents. Workflows run for 16+ minutes without timeout. Progress streams via SSE. Results persist. Audit trails are cryptographically signed for compliance.
 
 <p align="center">
   <a href="https://github.com/Agent-Field/agentfield"><img src="https://img.shields.io/badge/Powered%20by-AgentField-8A2BE2?style=for-the-badge" alt="AgentField"></a>
@@ -217,27 +248,56 @@ AF Deep Research runs on [AgentField](https://github.com/Agent-Field/agentfield)
 
 ## Examples
 
-A few queries to try:
+**Investment research pipeline**
+```bash
+# Risk analysis for due diligence
+curl -X POST .../execute_deep_research \
+  -d '{"input": {"query": "Rivian competitive position and financial risks", "tension_lens": "bear"}}'
 
-| Use case | Query |
-|----------|-------|
-| Due diligence | `"What are the risks of investing in Rivian?"` with `tension_lens: "bear"` |
-| Competitive intel | `"How is AMD positioning against NVIDIA in AI chips?"` |
-| Market research | `"What's driving growth in the weight loss drug market?"` |
+# Response feeds into: risk scoring model, portfolio dashboard, analyst report generator
+```
+
+**Knowledge graph builder**
+```bash
+# Extract entities and relationships for graph database
+curl -X POST .../execute_deep_research \
+  -d '{"input": {"query": "AI chip supply chain: manufacturers, suppliers, customers"}}'
+
+# entities[] → Neo4j nodes
+# relationships[] → Neo4j edges
+# Now queryable: "Show me all companies 2 hops from NVIDIA"
+```
+
+**Competitive intelligence system**
+```bash
+# Track competitor moves across multiple dimensions
+curl -X POST .../execute_deep_research \
+  -d '{"input": {"query": "How is AMD positioning against NVIDIA in datacenter AI?", "research_scope": 5}}'
+
+# article_evidence[] → feed alerting system
+# document → auto-generate weekly competitor brief
+```
+
+**Compliance research**
+```bash
+# Audit-ready research with source tracking
+curl -X POST .../execute_deep_research \
+  -d '{"input": {"query": "ESG practices of major lithium mining companies", "source_strictness": "strict"}}'
+
+# Each fact links to source_notes[] with URL, title, domain
+# Audit trail shows exactly where each claim came from
+```
 
 ## Links
 
-- **Docs** — [agentfield.ai/docs](https://agentfield.ai/docs)
-- **GitHub** — [Agent-Field/agentfield](https://github.com/Agent-Field/agentfield)
-- **Discord** — [Join the community](https://discord.com/invite/aBHaXMkpqh)
+- [Docs](https://agentfield.ai/docs)
+- [GitHub](https://github.com/Agent-Field/agentfield)
+- [Discord](https://discord.com/invite/aBHaXMkpqh)
 
 ## Contribute
 
 This is an early preview. We're actively developing and want feedback. File issues, open PRs, or come chat in [Discord](https://discord.com/invite/aBHaXMkpqh).
 
-<br>
-
 <p align="center">
-  <a href="https://github.com/Agent-Field/af-deep-research">Star if this saves you research time</a><br>
   <sub>Built by <a href="https://agentfield.ai">AgentField</a> · <a href="https://github.com/Agent-Field/af-deep-research/blob/main/LICENSE">Apache 2.0</a></sub>
 </p>
