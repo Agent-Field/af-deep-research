@@ -11,11 +11,26 @@
 
 ---
 
-A research API that questions itself. Submit a query. The system analyzes complexity, spawns parallel agents (entity extractors, relationship mappers, evidence gatherers), then evaluates what it found against quality thresholds. When gaps are detected, it generates new sub-queries and runs another cycle. After three iterations, you get structured JSON: typed entities, mapped relationships, evidence with source URLs, and a hierarchical document with citations.
+A research API that questions itself. Submit a query. The system spawns parallel agents, evaluates what it found against quality thresholds, generates new sub-queries when gaps are detected, and runs another cycle. The architecture orchestrates ~10,000 logical agent invocations per research. This is an [AI backend](https://www.agentfield.ai/blog/posts/ai-backend), not a chat interface.
 
-The architecture orchestrates ~10,000 logical agent invocations per research across iterations and parallel streams. Each cycle includes gap analysis ("what's missing?"), targeted query generation, and quality-driven continuation decisions. The system asks itself questions and answers them.
+## Quick start
 
-Output is structured for programmatic consumption: `entities[]` routes to your graph database, `relationships[]` populates Neo4j edges, `article_evidence[]` feeds compliance pipelines. This is an [AI backend](https://www.agentfield.ai/blog/posts/ai-backend), not a chat interface.
+```bash
+git clone https://github.com/Agent-Field/af-deep-research.git && cd af-deep-research
+cp .env.example .env
+# Add API keys to .env
+docker-compose -f docker-compose.hub.yml up -d
+```
+
+```bash
+curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execute_deep_research \
+  -H "Content-Type: application/json" \
+  -d '{"input": {"query": "What companies are investing in AI chips?"}}'
+```
+
+Returns `execution_id`. Stream progress via SSE, fetch results when complete.
+
+> Open [localhost:8080/ui](http://localhost:8080/ui) to watch the workflow live.
 
 ## Output
 
@@ -155,25 +170,6 @@ Multiple parallel streams explore different angles simultaneously. Each stream f
 
 - **Cross-stream patterns.** The synthesis layer doesn't summarize streams separately—it finds connections between them. A market trend that explains a technical pivot. A team background that validates a GTM strategy.
 
-## Quick start
-
-```bash
-git clone https://github.com/Agent-Field/af-deep-research.git && cd af-deep-research
-cp .env.example .env
-# Add API keys to .env
-docker-compose -f docker-compose.hub.yml up -d
-```
-
-```bash
-curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execute_deep_research \
-  -H "Content-Type: application/json" \
-  -d '{"input": {"query": "What companies are investing in AI chips?"}}'
-```
-
-Returns `execution_id`. Stream progress via SSE, fetch results when complete.
-
-> Open [localhost:8080/ui](http://localhost:8080/ui) to watch the workflow live.
-
 ## API
 
 **Submit:** `POST /api/v1/execute/async/meta_deep_research.execute_deep_research`
@@ -214,37 +210,6 @@ if response["metadata"]["final_quality_score"] < 0.7:
 | `source_strictness` | `strict`, `mixed`, or `permissive` source filtering. |
 
 Set `tension_lens: "bear"` for risk-focused analysis. Set `source_strictness: "strict"` to filter to reputable sources only.
-
-## Local LLMs
-
-To keep everything on your network:
-
-```bash
-OLLAMA_BASE_URL=http://host.docker.internal:11434
-DEFAULT_MODEL=ollama/llama3.2
-```
-
-> No telemetry. Your data stays on your infrastructure.
-
-<details>
-<summary>Model options</summary>
-
-| Model | Cost |
-|-------|------|
-| `deepseek-chat-v3.1` | $0.15/0.75 per 1M tokens |
-| `claude-sonnet-4` | $3/$15 per 1M tokens |
-| `ollama/llama3.2` | Free (local) |
-| `ollama/qwen2.5:72b` | Free (local) |
-
-</details>
-
-## The stack
-
-Runs on [AgentField](https://github.com/Agent-Field/agentfield), open-source infrastructure for production AI agents. Workflows run for 16+ minutes without timeout. Progress streams via SSE. Results persist. Audit trails are cryptographically signed for compliance.
-
-<p align="center">
-  <a href="https://github.com/Agent-Field/agentfield"><img src="https://img.shields.io/badge/Powered%20by-AgentField-8A2BE2?style=for-the-badge" alt="AgentField"></a>
-</p>
 
 ## Examples
 
@@ -287,6 +252,37 @@ curl -X POST .../execute_deep_research \
 # Each fact links to source_notes[] with URL, title, domain
 # Audit trail shows exactly where each claim came from
 ```
+
+## Local LLMs
+
+To keep everything on your network:
+
+```bash
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+DEFAULT_MODEL=ollama/llama3.2
+```
+
+> No telemetry. Your data stays on your infrastructure.
+
+<details>
+<summary>Model options</summary>
+
+| Model | Cost |
+|-------|------|
+| `deepseek-chat-v3.1` | $0.15/0.75 per 1M tokens |
+| `claude-sonnet-4` | $3/$15 per 1M tokens |
+| `ollama/llama3.2` | Free (local) |
+| `ollama/qwen2.5:72b` | Free (local) |
+
+</details>
+
+## The stack
+
+Runs on [AgentField](https://github.com/Agent-Field/agentfield), open-source infrastructure for production AI agents. Workflows run for 16+ minutes without timeout. Progress streams via SSE. Results persist. Audit trails are cryptographically signed for compliance.
+
+<p align="center">
+  <a href="https://github.com/Agent-Field/agentfield"><img src="https://img.shields.io/badge/Powered%20by-AgentField-8A2BE2?style=for-the-badge" alt="AgentField"></a>
+</p>
 
 ## Links
 
