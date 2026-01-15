@@ -176,7 +176,7 @@ Multiple parallel streams explore different angles simultaneously. Each stream f
 
 **Stream progress:** `GET /api/ui/v1/workflows/{execution_id}/notes/events` (SSE)
 
-**Fetch results:** `GET /api/v1/executions/{execution_id}/result`
+**Fetch results:** `GET /api/v1/executions/{execution_id}`
 
 ### Accessing response data
 
@@ -216,7 +216,8 @@ Set `tension_lens: "bear"` for risk-focused analysis. Set `source_strictness: "s
 **Investment research pipeline**
 ```bash
 # Risk analysis for due diligence
-curl -X POST .../execute_deep_research \
+curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execute_deep_research \
+  -H "Content-Type: application/json" \
   -d '{"input": {"query": "Rivian competitive position and financial risks", "tension_lens": "bear"}}'
 
 # Response feeds into: risk scoring model, portfolio dashboard, analyst report generator
@@ -225,7 +226,8 @@ curl -X POST .../execute_deep_research \
 **Knowledge graph builder**
 ```bash
 # Extract entities and relationships for graph database
-curl -X POST .../execute_deep_research \
+curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execute_deep_research \
+  -H "Content-Type: application/json" \
   -d '{"input": {"query": "AI chip supply chain: manufacturers, suppliers, customers"}}'
 
 # entities[] → Neo4j nodes
@@ -236,7 +238,8 @@ curl -X POST .../execute_deep_research \
 **Competitive intelligence system**
 ```bash
 # Track competitor moves across multiple dimensions
-curl -X POST .../execute_deep_research \
+curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execute_deep_research \
+  -H "Content-Type: application/json" \
   -d '{"input": {"query": "How is AMD positioning against NVIDIA in datacenter AI?", "research_scope": 5}}'
 
 # article_evidence[] → feed alerting system
@@ -246,7 +249,8 @@ curl -X POST .../execute_deep_research \
 **Compliance research**
 ```bash
 # Audit-ready research with source tracking
-curl -X POST .../execute_deep_research \
+curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execute_deep_research \
+  -H "Content-Type: application/json" \
   -d '{"input": {"query": "ESG practices of major lithium mining companies", "source_strictness": "strict"}}'
 
 # Each fact links to source_notes[] with URL, title, domain
