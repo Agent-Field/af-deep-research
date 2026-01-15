@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 """
-Venture Capital Intelligence Engine - v1.0 "Thesis-Driven"
+Deep Research Engine - Adaptive Intelligence System
 
-An adaptive, meta-level research system specialized for Venture Capital use cases.
-It dynamically classifies VC-related queries, executes parallel intelligence streams,
-and iteratively refines an investment hypothesis to produce a decision-oriented
-analytical package.
+A meta-level research system that performs comprehensive multi-stream intelligence gathering.
+It dynamically classifies queries, executes parallel research streams, and iteratively
+refines hypotheses to produce well-sourced analytical packages for any domain.
 """
 
 import asyncio
@@ -13,33 +12,13 @@ import datetime
 import hashlib
 import os
 import re
-from typing import Any, Dict, List, Optional
-
-from agentfield import Agent, AIConfig
-from pydantic import BaseModel, Field
-from temporal_context import (
-    get_temporal_context,
-)
-
-import asyncio
-import atexit
-import datetime
-import hashlib
-import os
-import re
-import signal
-import sys
-from typing import Any, Dict, List, Optional
+from enum import Enum
+from typing import Any, Dict, List, Optional, Union
 
 import aiohttp
 from agentfield import Agent, AIConfig
 from pydantic import BaseModel, Field
-import asyncio
-from enum import Enum
-from typing import List, Optional, Union
-
-from pydantic import BaseModel, Field
-import datetime
+from temporal_context import get_temporal_context
 from doc_generation_pipeline import (
     DocumentResponse as DocGenDocumentResponse,
     FinalDocument as DocGenFinalDocument,
@@ -47,113 +26,8 @@ from doc_generation_pipeline import (
 )
 
 # ==============================================================================
-# SECTION 0: MCP CLEANUP FIX
+# GLOBAL CONFIGURATION
 # ==============================================================================
-
-
-class MCPCleanupManager:
-    """Manages proper cleanup of MCP servers during shutdown."""
-
-    def __init__(self):
-        self.cleanup_tasks = []
-        self.loop: Optional[asyncio.AbstractEventLoop] = None
-        self._setup_cleanup_handlers()
-
-    def _setup_cleanup_handlers(self):
-        """Setup cleanup handlers for various shutdown scenarios."""
-        # Register cleanup for normal exit
-        atexit.register(self._sync_cleanup)
-
-        # Register signal handlers for graceful shutdown
-        if hasattr(signal, "SIGTERM"):
-            signal.signal(signal.SIGTERM, self._signal_handler)
-        if hasattr(signal, "SIGINT"):
-            signal.signal(signal.SIGINT, self._signal_handler)
-
-    def register_cleanup_task(self, coro):
-        """Register a coroutine for cleanup."""
-        self.cleanup_tasks.append(coro)
-
-    def set_event_loop(self, loop: asyncio.AbstractEventLoop):
-        """Set the event loop for cleanup operations."""
-        self.loop = loop
-
-    def _signal_handler(self, signum, frame):
-        """Handle shutdown signals."""
-        print(f"\n🛑 Received signal {signum}, initiating graceful shutdown...")
-        self._sync_cleanup()
-        sys.exit(0)
-
-    def _sync_cleanup(self):
-        """Synchronous cleanup that can be called from atexit."""
-        if not self.cleanup_tasks:
-            return
-
-        try:
-            # Try to get the current event loop
-            if self.loop and not self.loop.is_closed():
-                loop = self.loop
-            else:
-                try:
-                    loop = asyncio.get_event_loop()
-                except RuntimeError:
-                    # Create a new event loop if none exists
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-
-            # Run cleanup tasks
-            if not loop.is_closed():
-                loop.run_until_complete(self._async_cleanup())
-
-        except Exception as e:
-            print(f"Warning: MCP cleanup encountered an error: {e}")
-
-    async def _async_cleanup(self):
-        """Async cleanup of all registered tasks."""
-        if not self.cleanup_tasks:
-            return
-
-        try:
-            # Run all cleanup tasks concurrently with timeout
-            await asyncio.wait_for(
-                asyncio.gather(*self.cleanup_tasks, return_exceptions=True),
-                timeout=5.0,  # 5 second timeout for cleanup
-            )
-            print("✅ MCP cleanup completed successfully")
-        except asyncio.TimeoutError:
-            print("⚠️ MCP cleanup timed out after 5 seconds")
-        except Exception as e:
-            print(f"⚠️ MCP cleanup error: {e}")
-
-
-# Global cleanup manager instance
-cleanup_manager = MCPCleanupManager()
-
-
-def patch_agent_mcp_cleanup(app):
-    """
-    Patch the Agent MCP cleanup to use proper async handling.
-    Call this function after creating your Agent instance.
-    """
-    if hasattr(app, "_mcp_manager") and hasattr(
-        app._mcp_manager, "_cleanup_mcp_servers"
-    ):
-        original_cleanup = app._mcp_manager._cleanup_mcp_servers
-
-        # Register the cleanup coroutine with our manager
-        cleanup_manager.register_cleanup_task(original_cleanup())
-
-        # Set the event loop if available
-        try:
-            loop = asyncio.get_event_loop()
-            cleanup_manager.set_event_loop(loop)
-        except RuntimeError:
-            pass
-
-    return app
-
-
-# --- Global Configuration ---
 # The maximum number of concurrent AI calls to make at once.
 # Adjust this based on your model provider's rate limits.
 
@@ -193,9 +67,6 @@ app = Agent(
     callback_url=os.getenv("AGENT_CALLBACK_URL", None),
     ai_config=ai_config,
 )
-
-# Apply MCP cleanup patch to prevent shutdown warnings
-app = patch_agent_mcp_cleanup(app)
 
 
 # ==============================================================================
@@ -283,22 +154,19 @@ def translate_control_knob_to_description(level: int) -> str:
     }.get(level, "Balanced")
 
 
-# --- Assume 'app', 'ai_config', and 'cleanup_manager' are already defined as in your original code ---
-# --- Global Configuration (can be adjusted) ---
-
 # ==============================================================================
-# SECTION 1: VC-SPECIALIZED & CORE DATA SCHEMAS
+# DATA SCHEMAS
 # ==============================================================================
 
 
-# --- VC-Specific Intermediate Schemas (Simple & Flat) ---
+# --- Query Classification & Intelligence Schemas ---
 
 
 class VCQueryClassification(BaseModel):
-    """Classifies the user's query into a specific VC research category."""
+    """Classifies the user's query into a research category."""
 
     query_type: str = Field(
-        description="The category of the VC query (e.g., 'Market_Intelligence', 'Company_Diligence', 'Competitor_Analysis', 'Team_Assessment', 'Thesis_Validation')."
+        description="The category of the research query (e.g., 'Market_Intelligence', 'Entity_Analysis', 'Competitive_Analysis', 'Technology_Assessment', 'Strategic_Assessment')."
     )
     core_subject: str = Field(
         description="The primary company, technology, or market being investigated."
@@ -443,7 +311,7 @@ class BullBearBaseCase(BaseModel):
     )
 
 
-# --- Core Schemas (Unchanged for Compatibility) ---
+# --- Core Data Schemas ---
 
 
 class Article(BaseModel):
@@ -470,7 +338,7 @@ class Entity(BaseModel):
 
     name: str
     type: str = Field(
-        description="A VC-specific category (e.g., 'Company', 'Investor', 'Founder', 'Technology', 'Market_Trend', 'Metric')."
+        description="The entity category (e.g., 'Organization', 'Person', 'Technology', 'Market_Trend', 'Concept', 'Metric')."
     )
     summary: str
 
@@ -482,7 +350,7 @@ class Relationship(BaseModel):
     target_entity: str
     description: str
     relationship_type: str = Field(
-        description="A VC-specific connection type (e.g., 'Invests_In', 'Competes_With', 'Partners_With', 'Founded_By', 'Acquires')."
+        description="The connection type (e.g., 'Competes_With', 'Partners_With', 'Founded_By', 'Influences', 'Depends_On')."
     )
 
 
@@ -609,7 +477,7 @@ class LoopDecision(BaseModel):
 
 
 # ==============================================================================
-# SECTION 2: VC-SPECIFIC META-REASONER AGENTS
+# META-REASONER AGENTS
 # ==============================================================================
 
 # --- Parallelized Processing Utilities ---
@@ -1114,7 +982,6 @@ async def synthesize_key_discoveries_from_intel(
 ) -> VCKeyDiscoveries:
     """
     Synthesizes disparate intelligence streams into high-level, non-obvious discoveries.
-    This REPLACES the old hardcoded 'format_intel_as_discoveries' helper.
     """
     # Show what we're synthesizing
     intel_sources = []
@@ -1190,7 +1057,6 @@ async def extract_vc_entities_and_relationships(
 ) -> VCEntityRelationshipPackage:
     """
     Extracts a tight, relevant knowledge graph from the synthesized discoveries.
-    This REPLACES the old placeholder logic for entities and relationships.
     """
     # Show what we're mapping
     if all_discoveries:
@@ -1425,7 +1291,7 @@ You are a General Partner reviewing an updated diligence report. An analyst has 
 async def classify_vc_query(
     query: str, model: Optional[str] = None, api_key: Optional[str] = None
 ) -> VCQueryClassification:
-    """Phase 1: Classifies the initial query into a standard VC research workflow."""
+    """Phase 1: Classifies the initial query into a research workflow category."""
     app.note(
         f"Analyzing your question: '{query[:60]}{'...' if len(query) > 60 else ''}'"
     )
