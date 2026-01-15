@@ -176,7 +176,7 @@ Multiple parallel streams explore different angles simultaneously. Each stream f
 
 **Stream progress:** `GET /api/ui/v1/workflows/{execution_id}/notes/events` (SSE)
 
-**Fetch results:** `GET /api/v1/executions/{execution_id}/result`
+**Fetch results:** `GET /api/v1/executions/{execution_id}`
 
 ### Accessing response data
 
