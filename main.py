@@ -70,7 +70,7 @@ app = Agent(
 
 
 # ==============================================================================
-# SECTION 1: CORE UTILITIES & HELPERS
+# CORE UTILITIES & HELPERS
 # ==============================================================================
 async def search_web_for_content(query: str) -> List[Dict]:
     """
@@ -1818,7 +1818,7 @@ Based *only* on the hypothesis provided, write a concise summary for each of the
 
 
 # ==============================================================================
-# SECTION 3: ORCHESTRATOR & PUBLIC API REASONERS
+# ORCHESTRATOR & PUBLIC API REASONERS
 # ==============================================================================
 
 
@@ -2359,12 +2359,12 @@ async def prepare_research_package(
     research_focus: int = 3,
     research_scope: int = 3,
     max_research_loops: int = 3,
-    num_parallel_streams: int = 2,  # NEW PARAMETER
+    num_parallel_streams: int = 2,
     model: Optional[str] = None,
     api_key: Optional[str] = None,
-) -> ModeAwareResearchResponse:  # EXACT SAME RETURN TYPE
+) -> ModeAwareResearchResponse:
     """
-    Iterative research orchestrator - EXACT SAME API, enhanced with internal loops.
+    Iterative research orchestrator with multi-stream intelligence gathering.
     """
     start_time = time.time()
     app.note(f"Beginning research on: '{query[:60]}{'...' if len(query) > 60 else ''}'")
@@ -2626,7 +2626,7 @@ async def prepare_research_package(
             else:
                 app.note(f"Expanding research to explore: {loop_decision.focus_areas}")
 
-    # === FINAL PACKAGING (EXACT SAME AS ORIGINAL) ===
+    # === FINAL PACKAGING ===
     final_hypothesis = await generate_adaptive_hypothesis(
         query,
         classification.query_type,
@@ -2646,7 +2646,6 @@ async def prepare_research_package(
         api_key=api_key,
     )
 
-    # EXACT SAME SCHEMA AS ORIGINAL
     final_package = UniversalResearchPackage(
         query=query,
         core_thesis=final_hypothesis.core_thesis,
@@ -2668,7 +2667,6 @@ async def prepare_research_package(
     execution_time = time.time() - start_time
     app.note("Analysis complete — ready to present findings")
 
-    # EXACT SAME RETURN TYPE AS ORIGINAL
     return ModeAwareResearchResponse(
         mode=mode,
         version="5.0-Iterative-Meta",
@@ -2697,16 +2695,16 @@ async def continue_research(
     research_focus: int = 3,
     research_scope: int = 3,
     max_research_loops: int = 2,
-    num_parallel_streams: int = 2,  # NEW PARAMETER
+    num_parallel_streams: int = 2,
     model: Optional[str] = None,
     api_key: Optional[str] = None,
-) -> ModeAwareResearchResponse:  # EXACT SAME RETURN TYPE
+) -> ModeAwareResearchResponse:
     """
-    Iterative research continuation - EXACT SAME API, enhanced with internal loops.
+    Continues research from a previous package with additional queries.
     """
     start_time = time.time()
 
-    # Extract previous research state (EXACT SAME AS ORIGINAL)
+    # Extract previous research state
     if "research_package" in previous_package:
         package_data = previous_package["research_package"]
     else:
@@ -2725,7 +2723,7 @@ async def continue_research(
         f"Expansion focus: {sub_classification.query_type.replace('_', ' ').lower()}"
     )
 
-    # Initialize expanded research state (EXACT SAME LOGIC AS ORIGINAL)
+    # Initialize expanded research state from previous package
     all_source_articles = prev_pkg.source_articles[:]
     all_article_evidence = prev_pkg.article_evidence[:]
     current_entities = prev_pkg.entities[:]
@@ -2868,7 +2866,7 @@ async def continue_research(
             api_key=api_key,
         )
 
-        # Merge discoveries (EXACT SAME LOGIC AS ORIGINAL)
+        # Merge discoveries from previous and new research
         current_discoveries = prev_pkg.key_discoveries + [
             f"[EXPANSION] {discovery}"
             for discovery in expanded_discoveries
@@ -2929,7 +2927,7 @@ async def continue_research(
             if not continuation_decision.should_continue:
                 break
 
-    # === FINAL EXPANSION PACKAGING (EXACT SAME AS ORIGINAL) ===
+    # === FINAL EXPANSION PACKAGING ===
     enhanced_hypothesis = await generate_adaptive_hypothesis(
         f"Comprehensive: {prev_pkg.query} | Enhanced: {sub_query}",
         sub_classification.query_type,
@@ -2949,7 +2947,6 @@ async def continue_research(
         api_key=api_key,
     )
 
-    # EXACT SAME SCHEMA AS ORIGINAL
     enhanced_package = UniversalResearchPackage(
         query=prev_pkg.query,  # Keep original query
         core_thesis=enhanced_hypothesis.core_thesis,
@@ -2974,7 +2971,6 @@ async def continue_research(
 
     app.note("Research complete — comprehensive analysis ready")
 
-    # EXACT SAME RETURN TYPE AS ORIGINAL
     return ModeAwareResearchResponse(
         mode=mode,
         version="5.0-Iterative-Expansion",
@@ -3654,8 +3650,8 @@ async def generate_research_briefing(
     api_key: Optional[str] = None,
 ) -> ResearchBriefingResponse:
     """
-    Generates an interactive, VC-focused briefing from a research package. (v2 - Rewritten)
-    This now uses parallel AI calls to generate the components.
+    Generates an interactive research briefing from a research package.
+    Uses parallel AI calls to generate briefing components.
     """
     start_time = time.time()
 
@@ -3838,7 +3834,7 @@ Convert these internal diligence questions into short, user-facing probes for th
     execution_time = time.time() - start_time
     return ResearchBriefingResponse(
         mode=mode,
-        version="2.0-VC-Enhanced",
+        version="2.0",
         research_package=briefing.dict(),
         metadata={
             "query": main_query,
@@ -3886,7 +3882,7 @@ async def generate_document_from_package(
 
 
 # ==============================================================================
-# SECTION 5: END-TO-END RESEARCH ORCHESTRATION
+# END-TO-END RESEARCH ORCHESTRATION
 # ==============================================================================
 
 
