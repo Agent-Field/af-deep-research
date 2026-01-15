@@ -11,7 +11,7 @@ import asyncio
 import datetime
 import hashlib
 import os
-import re
+import time
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
 
@@ -39,7 +39,7 @@ NUM_SEARCH_TERMS_PER_TASK = 3
 MAX_BLUEPRINT_EXECUTION_LOOPS = int(os.getenv("MAX_BLUEPRINT_EXECUTION_LOOPS", "3"))
 ADJUDICATION_BATCH_SIZE = 50
 
-# assing duplicate entity larger would mean small models cant work
+# Batch size for entity deduplication - larger values may overwhelm smaller models
 ENTITY_BATCH_SIZE = 10
 
 # --- AI Configuration & Agent Setup ---
@@ -378,8 +378,8 @@ class UniversalResearchPackage(BaseModel):
     article_evidence: List[ArticleEvidence]
 
 
-class ModeAwareResearchResponse(BaseModel):
-    """Mode-aware response format for prepare/continue APIs."""
+class ResearchResponse(BaseModel):
+    """Base response format for all research APIs."""
 
     mode: str
     version: str
@@ -387,22 +387,10 @@ class ModeAwareResearchResponse(BaseModel):
     metadata: dict
 
 
-class ResearchBriefingResponse(BaseModel):
-    """Response format for research briefing API."""
-
-    mode: str
-    version: str
-    research_package: dict
-    metadata: dict
-
-
-class DocumentResponse(BaseModel):
-    """Response format for document generation API."""
-
-    mode: str
-    version: str
-    research_package: dict
-    metadata: dict
+# Type aliases for API-specific responses (same structure, different semantic meaning)
+ModeAwareResearchResponse = ResearchResponse  # For prepare/continue APIs
+ResearchBriefingResponse = ResearchResponse   # For briefing API
+DocumentResponse = ResearchResponse           # For document generation API
 
 
 class VCEntityRelationshipPackage(BaseModel):
@@ -1834,37 +1822,6 @@ Based *only* on the hypothesis provided, write a concise summary for each of the
 # ==============================================================================
 
 
-def format_intel_as_discoveries(
-    market: MarketIntel, biz: BusinessIntel, net: NetworkIntel, tech: TechnicalIntel
-) -> List[str]:
-    """Helper to convert structured intel into flat 'key_discoveries' strings."""
-    discoveries = []
-    # Market
-    discoveries.append(
-        f"Market Landscape: {market.market_size_summary} driven by {', '.join(market.key_market_drivers)}."
-    )
-    discoveries.append(f"Competitive Env: {market.competitive_landscape_summary}.")
-    # Business
-    discoveries.append(
-        f"Business Model: {biz.business_model_summary} with a GTM strategy of {biz.go_to_market_strategy}."
-    )
-    if biz.revenue_traction_indicators:
-        discoveries.append(
-            f"Traction Signals: {', '.join(biz.revenue_traction_indicators)}."
-        )
-    # Network
-    if net.key_personnel_backgrounds:
-        discoveries.append(
-            f"Team Strength: Key personnel include {', '.join(net.key_personnel_backgrounds)}."
-        )
-    discoveries.append(f"Investor Quality: {net.investor_syndicate_quality}.")
-    # Technical
-    discoveries.append(
-        f"Technology Core: {tech.tech_stack_summary} with differentiators like {', '.join(tech.product_differentiation)}."
-    )
-    return discoveries
-
-
 @app.reasoner()
 async def assess_research_completeness(
     query: str,
@@ -2409,8 +2366,6 @@ async def prepare_research_package(
     """
     Iterative research orchestrator - EXACT SAME API, enhanced with internal loops.
     """
-    import time
-
     start_time = time.time()
     app.note(f"Beginning research on: '{query[:60]}{'...' if len(query) > 60 else ''}'")
 
@@ -2749,8 +2704,6 @@ async def continue_research(
     """
     Iterative research continuation - EXACT SAME API, enhanced with internal loops.
     """
-    import time
-
     start_time = time.time()
 
     # Extract previous research state (EXACT SAME AS ORIGINAL)
@@ -2974,17 +2927,6 @@ async def continue_research(
             )
 
             if not continuation_decision.should_continue:
-                # Show expansion in user terms
-                if entity_expansion > 0 and relationship_expansion > 0:
-                    app.note(
-                        f"Discovered new players and connections in the {sub_classification.core_subject} ecosystem"
-                    )
-                elif entity_expansion > 0:
-                    app.note(
-                        f"Identified additional key players around {sub_classification.core_subject}"
-                    )
-                elif relationship_expansion > 0:
-                    app.note(f"Uncovered new connections between existing players")
                 break
 
     # === FINAL EXPANSION PACKAGING (EXACT SAME AS ORIGINAL) ===
@@ -3715,9 +3657,6 @@ async def generate_research_briefing(
     Generates an interactive, VC-focused briefing from a research package. (v2 - Rewritten)
     This now uses parallel AI calls to generate the components.
     """
-    import time
-    import hashlib
-
     start_time = time.time()
 
     if "research_package" in package:
@@ -4027,8 +3966,6 @@ async def execute_deep_research(
             - article_evidence: Extracted facts and quotes
         - metadata: Timing and performance statistics
     """
-    import time
-
     start_time = time.time()
     app.note(f"Starting end-to-end deep research on: '{query[:80]}{'...' if len(query) > 80 else ''}'")
 
@@ -4078,13 +4015,8 @@ async def execute_deep_research(
 
 
 # ==============================================================================
-# SECTION 6: AGENT SERVER
+# AGENT SERVER
 # ==============================================================================
-# if __name__ == "__main__":
-#     app.serve(auto_port=True, host="0.0.0.0")
 
 if __name__ == "__main__":
-    # Always use auto_port=True - the SDK will check PORT env var internally
-    # This avoids an SDK bug where conditional `import os` causes scoping issues
-    # when an explicit port is passed to serve()
     app.serve(auto_port=True, host="0.0.0.0")
