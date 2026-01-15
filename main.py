@@ -162,7 +162,7 @@ def translate_control_knob_to_description(level: int) -> str:
 # --- Query Classification & Intelligence Schemas ---
 
 
-class VCQueryClassification(BaseModel):
+class QueryClassification(BaseModel):
     """Classifies the user's query into a research category."""
 
     query_type: str = Field(
@@ -173,23 +173,6 @@ class VCQueryClassification(BaseModel):
     )
     key_question: str = Field(
         description="A refined, single-sentence question that captures the user's core intent."
-    )
-
-
-class MarketIntel(BaseModel):
-    """Structured insights from the Market Intelligence stream."""
-
-    market_size_summary: str = Field(
-        description="TAM/SAM/SOM insights or directional market growth trends."
-    )
-    key_market_drivers: List[str] = Field(
-        description="List of key technological, economic, or regulatory drivers."
-    )
-    competitive_landscape_summary: str = Field(
-        description="A summary of the main competitors and market concentration."
-    )
-    regulatory_snapshot: str = Field(
-        description="Brief on any critical regulations impacting the market."
     )
 
 
@@ -215,62 +198,11 @@ class MergedEntity(BaseModel):
     summary: str
 
 
-class BusinessIntel(BaseModel):
-    """Structured insights from the Business Intelligence stream."""
-
-    business_model_summary: str = Field(
-        description="How the company makes money and its value proposition."
-    )
-    revenue_traction_indicators: List[str] = Field(
-        description="Indicators of financial performance or customer adoption."
-    )
-    customer_segment_summary: str = Field(
-        description="Description of the target customer profile and needs."
-    )
-    go_to_market_strategy: str = Field(
-        description="How the company reaches its customers."
-    )
-
-
-class NetworkIntel(BaseModel):
-    """Structured insights from the Network Intelligence stream."""
-
-    key_personnel_backgrounds: List[str] = Field(
-        description="Summaries of the founding team or key hires' track records."
-    )
-    investor_syndicate_quality: str = Field(
-        description="Analysis of the existing investors and their reputation."
-    )
-    strategic_partnerships: List[str] = Field(
-        description="Notable partnerships that provide a competitive advantage."
-    )
-    hiring_patterns: str = Field(
-        description="Trends in recent hiring that indicate strategic direction."
-    )
-
-
-class TechnicalIntel(BaseModel):
-    """Structured insights from the Technical Intelligence stream."""
-
-    tech_stack_summary: str = Field(
-        description="Description of the core technology and its components."
-    )
-    product_differentiation: List[str] = Field(
-        description="Key technical or product features that create a moat."
-    )
-    ip_position_summary: str = Field(
-        description="Summary of patent filings or proprietary technology claims."
-    )
-    innovation_velocity: str = Field(
-        description="Indicators of the company's R&D and product development speed."
-    )
-
-
-class InvestmentHypothesis(BaseModel):
-    """A structured investment thesis based on synthesized intelligence."""
+class ResearchHypothesis(BaseModel):
+    """A structured research hypothesis based on synthesized intelligence."""
 
     core_thesis: str = Field(
-        description="The central argument for why this is or is not a good investment, framed as a hypothesis."
+        description="The central argument or hypothesis being investigated."
     )
     supporting_strengths: List[str] = Field(
         description="The top 3-4 factors that support the thesis."
@@ -280,34 +212,6 @@ class InvestmentHypothesis(BaseModel):
     )
     key_unknowns: List[str] = Field(
         description="Critical unanswered questions that require deeper investigation."
-    )
-
-
-class TrajectoryDecision(BaseModel):
-    """Determines the next step in the research process."""
-
-    next_step: str = Field(
-        description="The action to take next ('Deep_Dive', 'Multi_Perspective_Analysis', or 'Final_Synthesis')."
-    )
-    rationale: str = Field(
-        description="A brief justification for the chosen next step."
-    )
-    focus_areas: List[str] = Field(
-        description="Specific topics or questions to focus on in the next step."
-    )
-
-
-class BullBearBaseCase(BaseModel):
-    """Defines the bull, bear, and base case scenarios for an investment."""
-
-    bull_case_summary: str = Field(
-        description="The optimistic scenario: what has to go right for massive success."
-    )
-    bear_case_summary: str = Field(
-        description="The pessimistic scenario: key risks and potential failure modes."
-    )
-    base_case_summary: str = Field(
-        description="The most probable outcome based on the current evidence."
     )
 
 
@@ -393,26 +297,11 @@ ResearchBriefingResponse = ResearchResponse   # For briefing API
 DocumentResponse = ResearchResponse           # For document generation API
 
 
-class VCEntityRelationshipPackage(BaseModel):
-    """A container for entities and relationships extracted from intelligence reports."""
-
-    entities: List[Entity]
-    relationships: List[Relationship]
-
-
-class VCKeyDiscoveries(BaseModel):
-    """A container for high-level, synthesized discoveries."""
-
-    key_discoveries: List[str] = Field(
-        description="A list of 3-5 non-obvious, critical insights synthesized from all intelligence streams."
-    )
-
-
 class StreamOutput(BaseModel):
     """Holds all outputs from a single intelligence stream."""
 
     stream_type: str
-    synthesized_intel: Dict[str, Any]  # This will hold MarketIntel, BusinessIntel, etc.
+    synthesized_intel: Dict[str, Any]
     source_articles: List[Article]
     article_evidence: List[ArticleEvidence]
 
@@ -959,143 +848,6 @@ async def process_evidence_deduplication_parallel(
 
 
 @app.reasoner()
-async def synthesize_key_discoveries_from_intel(
-    query: str,
-    market_intel: MarketIntel,
-    business_intel: BusinessIntel,
-    network_intel: NetworkIntel,
-    technical_intel: TechnicalIntel,
-    model: Optional[str] = None,
-    api_key: Optional[str] = None,
-) -> VCKeyDiscoveries:
-    """
-    Synthesizes disparate intelligence streams into high-level, non-obvious discoveries.
-    """
-    # Show what we're synthesizing
-    intel_sources = []
-    if market_intel.key_market_drivers:
-        intel_sources.append(f"market trends like {market_intel.key_market_drivers[0]}")
-    if business_intel.business_model_summary:
-        intel_sources.append("business model insights")
-    if network_intel.key_personnel_backgrounds:
-        intel_sources.append("team analysis")
-
-    sources_context = ", ".join(intel_sources[:2])
-    if sources_context:
-        app.note(f"Synthesizing insights from {sources_context}…")
-    else:
-        app.note("Identifying the key takeaways from our research…")
-
-    prompt = f"""
-<task>
-You are a sharp, insightful VC Analyst. Your superpower is synthesis. You can look at reports from different teams (market, business, network, tech) and connect the dots to find the hidden story. Your goal is to identify the 3-5 most critical, non-obvious insights that a partner needs to know.
-</task>
-
-<original_research_query>{query}</original_research_query>
-
-<intelligence_reports>
-<market_intelligence>
-- Market Size: {market_intel.market_size_summary}
-- Key Drivers: {', '.join(market_intel.key_market_drivers)}
-- Competition: {market_intel.competitive_landscape_summary}
-</market_intelligence>
-
-<business_intelligence>
-- Business Model: {business_intel.business_model_summary}
-- Traction: {', '.join(business_intel.revenue_traction_indicators)}
-- GTM Strategy: {business_intel.go_to_market_strategy}
-</business_intelligence>
-
-<network_intelligence>
-- Team: {', '.join(network_intel.key_personnel_backgrounds)}
-- Investors: {network_intel.investor_syndicate_quality}
-</network_intelligence>
-
-<technical_intelligence>
-- Technology: {technical_intel.tech_stack_summary}
-- Differentiation: {', '.join(technical_intel.product_differentiation)}
-</technical_intelligence>
-</intelligence_reports>
-
-<instructions>
-1.  **Do NOT simply summarize each section.** Read across all the reports.
-2.  **Find the Connections:** How does a market driver relate to a technical differentiator? How does the team's background explain their GTM strategy?
-3.  **Identify Tensions and Synergies:** Is there a conflict between the market trend and the business model? Is there a powerful synergy between the investor network and strategic partnerships?
-4.  **Distill into Discoveries:** Formulate 3-5 single-sentence `key_discoveries`. Each discovery should be a complete thought and a valuable insight on its own. Focus on the 'so what'.
-
-**Example of a WEAK discovery (just a summary):** "The market is large and the team is experienced."
-**Example of a STRONG discovery (a synthesis):** "The experienced team's deep industry connections are a key enabler for their land-and-expand GTM strategy in a market that is rapidly consolidating."
-</instructions>
-"""
-    return await ai_with_dynamic_params(
-        system="You are a VC Analyst specializing in synthesizing disparate data points into critical, non-obvious insights.",
-        user=prompt,
-        schema=VCKeyDiscoveries,
-        model=model,
-        api_key=api_key,
-    )
-
-
-@app.reasoner()
-async def extract_vc_entities_and_relationships(
-    core_subject: str,
-    all_discoveries: List[str],
-    model: Optional[str] = None,
-    api_key: Optional[str] = None,
-) -> VCEntityRelationshipPackage:
-    """
-    Extracts a tight, relevant knowledge graph from the synthesized discoveries.
-    """
-    # Show what we're mapping
-    if all_discoveries:
-        # Extract entity names mentioned in discoveries
-        discovery_preview = all_discoveries[0][:60] + "..."
-        app.note(
-            f"Mapping the network around {core_subject} — starting with: {discovery_preview}"
-        )
-    else:
-        app.note(f"Mapping the key players and connections around {core_subject}…")
-
-    prompt = f"""
-<task>
-You are a Knowledge Graph Specialist for a VC firm. Your job is to read a list of high-level discoveries and extract the most critical entities and their relationships to build a strategic map of the investment landscape.
-</task>
-
-<core_subject_of_analysis>{core_subject}</core_subject_of_analysis>
-
-<synthesized_discoveries>
-{chr(10).join(f'- {d}' for d in all_discoveries)}
-</synthesized_discoveries>
-
-<instructions>
-1.  **Identify Key Entities**: Read through the discoveries and identify the most important actors. Always include the `<core_subject_of_analysis>`. Use the following VC-specific entity types:
-    - `Company`: A specific company (e.g., "{core_subject}").
-    - `Investor`: A VC firm or angel investor.
-    - `Founder`: A key person who started a company.
-    - `Technology`: A specific technology or platform (e.g., "AI-powered logistics").
-    - `Market_Trend`: A high-level market dynamic (e.g., "Market Consolidation").
-    - `Metric`: A key business metric (e.g., "Customer Acquisition Cost").
-2.  **Define Relationships**: Identify the connections between the entities you extracted. Use the following VC-specific relationship types:
-    - `Invests_In`
-    - `Competes_With`
-    - `Partners_With`
-    - `Founded_By`
-    - `Acquires`
-    - `Impacted_By` (e.g., a Company is `Impacted_By` a Market_Trend).
-    - `Demonstrates` (e.g., a Company `Demonstrates` a Metric).
-3.  **Be Selective**: Only extract the most central entities and relationships that define the strategic picture. Aim for quality over quantity. The graph should be tight and meaningful.
-</instructions>
-"""
-    return await ai_with_dynamic_params(
-        system="You are a VC Knowledge Graph Specialist who extracts strategically important entities and relationships.",
-        user=prompt,
-        schema=VCEntityRelationshipPackage,
-        model=model,
-        api_key=api_key,
-    )
-
-
-@app.reasoner()
 async def generate_adaptive_hypothesis(
     query: str,
     query_type: str,
@@ -1104,7 +856,7 @@ async def generate_adaptive_hypothesis(
     relationships: List[Relationship],
     model: Optional[str] = None,
     api_key: Optional[str] = None,
-) -> InvestmentHypothesis:
+) -> ResearchHypothesis:
     """Generates adaptive hypothesis based on query type and domain."""
 
     # Create rich context from extracted network
@@ -1221,597 +973,7 @@ Ensure the hypothesis directly addresses the original query and integrates insig
         system=framework["persona"]
         + " You synthesize comprehensive research into testable strategic hypotheses that integrate network analysis with domain expertise.",
         user=prompt,
-        schema=InvestmentHypothesis,  # Reuse schema but make it domain-adaptive
-        model=model,
-        api_key=api_key,
-    )
-
-
-@app.reasoner()
-async def merge_and_refine_hypothesis(
-    original_hypothesis: InvestmentHypothesis,
-    new_intel_summary: str,
-    sub_query: str,
-    model: Optional[str] = None,
-    api_key: Optional[str] = None,
-) -> InvestmentHypothesis:
-    """Merges new intelligence from a deep dive to refine an existing hypothesis."""
-    # Show what we're integrating
-    intel_preview = (
-        new_intel_summary[:50] + "..."
-        if len(new_intel_summary) > 50
-        else new_intel_summary
-    )
-    app.note(f"Integrating new insights: {intel_preview}")
-
-    prompt = f"""
-<task>
-You are a General Partner reviewing an updated diligence report. An analyst has just completed a deep dive on a specific question. Your job is to integrate the new findings with the original investment hypothesis to create a stronger, more refined version.
-</task>
-
-<original_hypothesis>
-- **Thesis**: {original_hypothesis.core_thesis}
-- **Strengths**: {original_hypothesis.supporting_strengths}
-- **Risks**: {original_hypothesis.counter_risks}
-- **Unknowns**: {original_hypothesis.key_unknowns}
-</original_hypothesis>
-
-<deep_dive_request>{sub_query}</deep_dive_request>
-<new_intelligence_summary>{new_intel_summary}</new_intelligence_summary>
-
-<instructions>
-1.  **Integrate Findings**: Read the `new_intelligence_summary`. How does it confirm, contradict, or clarify the `original_hypothesis`?
-2.  **Refine Core Thesis**: Rewrite the `core_thesis` to incorporate the new information. It should be more specific and confident.
-3.  **Update Strengths & Risks**: Modify the lists of strengths and risks. Add new ones, remove invalidated ones, or strengthen existing ones based on the new intel.
-4.  **Resolve Unknowns**: The `key_unknowns` should be updated. Remove the questions that have now been answered by the deep dive and add any new critical questions that have emerged.
-</instructions>
-"""
-    return await ai_with_dynamic_params(
-        system="You are a VC General Partner refining an investment thesis with new diligence findings.",
-        user=prompt,
-        schema=InvestmentHypothesis,
-        model=model,
-        api_key=api_key,
-    )
-
-
-@app.reasoner()
-async def classify_vc_query(
-    query: str, model: Optional[str] = None, api_key: Optional[str] = None
-) -> VCQueryClassification:
-    """Phase 1: Classifies the initial query into a research workflow category."""
-    app.note(
-        f"Analyzing your question: '{query[:60]}{'...' if len(query) > 60 else ''}'"
-    )
-    prompt = f"""
-<task>
-You are a Principal at a top-tier Venture Capital firm. Your role is to receive a research request from a Partner and immediately classify it to assign it to the right analyst team. You must determine the primary intent behind the query.
-</task>
-
-<query_categories>
-- **Market_Intelligence**: Broad questions about market size, trends, TAM/SAM/SOM, and competitive dynamics. (e.g., "What is the market size for developer tools in AI?")
-- **Company_Diligence**: Specific questions about a named company's business model, traction, team, or technology. (e.g., "Analyze the business model of 'Acme Corp'.")
-- **Competitor_Analysis**: Questions focused on comparing a company to its rivals. (e.g., "How does 'Acme Corp' differentiate from its main competitors?")
-- **Team_Assessment**: Questions specifically about the founders, executives, or key hires of a company. (e.g., "What is the track record of the founding team of 'Acme Corp'?")
-- **Thesis_Validation**: Questions designed to prove or disprove a specific investment idea. (e.g., "Is now the right time to invest in vertical SaaS for logistics?")
-</query_categories>
-
-<user_query>{query}</user_query>
-
-<instructions>
-1.  Analyze the `<user_query>`.
-2.  Select the single best `query_type` from the list of categories.
-3.  Identify the `core_subject` (the company, market, or technology).
-4.  Rewrite the query into a `key_question` that is a clear, actionable research directive for an analyst.
-</instructions>
-"""
-    return await ai_with_dynamic_params(
-        system="You are a VC Principal classifying research requests. Your output must be precise and actionable.",
-        user=prompt,
-        schema=VCQueryClassification,
-        model=model,
-        api_key=api_key,
-    )
-
-
-@app.reasoner()
-async def gather_intelligence_stream(
-    stream_type: str,
-    subject: str,
-    key_question: str,
-    start_article_id: int,
-    model: Optional[str] = None,
-    api_key: Optional[str] = None,
-) -> StreamOutput:
-    """
-    Executes a full intelligence stream: search, evidence extraction, and synthesis.
-    This version correctly processes and returns all source materials.
-    """
-    app.note(f"Researching {subject}'s {stream_type.lower()} landscape…")
-
-    # Configuration for each stream type
-    stream_configs = {
-        "Market": {
-            "persona": "You are a Market Research Analyst at a VC firm specializing in market dynamics, competitive landscapes, and growth forecasts.",
-            "schema": MarketIntel,
-            "search_queries": [
-                f"{subject} market size TAM SAM growth forecast 2025",
-                f"Key market trends driving {subject} sector dynamics",
-                f"Top competitors market share {subject} competitive analysis",
-                f"Regulatory environment {subject} compliance requirements",
-            ],
-        },
-        "Business": {
-            "persona": "You are a Business Intelligence Analyst at a VC firm specializing in business models, revenue mechanics, and customer acquisition strategies.",
-            "schema": BusinessIntel,
-            "search_queries": [
-                f"{subject} business model revenue streams monetization",
-                f"{subject} customer acquisition go-to-market strategy",
-                f"{subject} funding rounds traction metrics customer growth",
-                f"{subject} target customer profile market positioning",
-            ],
-        },
-        "Network": {
-            "persona": "You are a Network Intelligence Analyst at a VC firm specializing in team assessment, investor syndication, and strategic partnerships.",
-            "schema": NetworkIntel,
-            "search_queries": [
-                f"{subject} founders executives management team background",
-                f"{subject} investors board members funding syndicate",
-                f"{subject} strategic partnerships integrations alliances",
-                f"{subject} key hires talent acquisition recruiting 2024 2025",
-            ],
-        },
-        "Technical": {
-            "persona": "You are a Technical Diligence Analyst at a VC firm specializing in technology assessment, IP analysis, and product differentiation.",
-            "schema": TechnicalIntel,
-            "search_queries": [
-                f"{subject} technology stack technical architecture",
-                f"{subject} product features differentiation competitive advantages",
-                f"{subject} patents intellectual property proprietary technology",
-                f"{subject} technical team engineering capabilities R&D",
-            ],
-        },
-    }
-
-    config = stream_configs.get(stream_type)
-    if not config:
-        raise ValueError(f"Invalid stream type: {stream_type}")
-
-    # --- 1. Search and Article Creation ---
-    search_tasks = [search_web_for_content(query) for query in config["search_queries"]]
-    search_results_lists = await asyncio.gather(*search_tasks)
-
-    # Flatten and deduplicate articles
-    unique_articles_map = {
-        res["url"]: res
-        for res in [item for sublist in search_results_lists for item in sublist]
-        if "url" in res and res.get("content", "").strip()
-    }
-
-    source_articles: List[Article] = []
-    article_id_counter = start_article_id
-    for url, result in unique_articles_map.items():
-        content = result.get("content", "")
-        if content.strip():
-            source_articles.append(
-                Article(
-                    id=article_id_counter,
-                    title=result.get("title", "No Title"),
-                    url=url,
-                    content=content,
-                    content_hash=create_content_hash(content),
-                )
-            )
-            article_id_counter += 1
-
-    # --- 2. Parallel Evidence Extraction ---
-    async def extract_evidence(article: Article) -> Optional[ArticleEvidence]:
-        prompt = f"""
-<task>
-You are a VC Intelligence Analyst specializing in {stream_type.lower()} intelligence. Your mission is to extract evidence that directly supports investment decision-making.
-</task>
-
-<research_context>
-<original_query>{key_question}</original_query>
-<subject_company>{subject}</subject_company>
-<intelligence_focus>{stream_type} Analysis</intelligence_focus>
-</research_context>
-
-<article_content>
-{article.content[:4000]}
-</article_content>
-
-<extraction_framework>
-<relevance_assessment>
-Assess WHY this article matters for VC decision-making on {subject}:
-- Does it provide market sizing or competitive intelligence?
-- Does it reveal business model insights or traction signals?
-- Does it offer team assessment or investor validation data?
-- Does it contain technical differentiation or IP insights?
-</relevance_assessment>
-
-<fact_extraction>
-Extract discrete, investment-relevant facts:
-- Quantitative metrics (revenue, growth rates, market size, funding amounts)
-- Qualitative indicators (customer testimonials, expert opinions, competitive advantages)
-- Strategic developments (partnerships, acquisitions, product launches)
-- Risk factors (regulatory challenges, competitive threats, technical limitations)
-</fact_extraction>
-
-<quote_extraction>
-Extract impactful quotes that:
-- Provide expert validation or criticism
-- Reveal strategic intent from leadership
-- Demonstrate market sentiment or customer feedback
-- Support or challenge investment thesis
-</quote_extraction>
-</extraction_framework>
-
-<instructions>
-Extract evidence through the lens of VC investment analysis. Focus on information that would influence an investment committee's decision. Ensure the relevance_summary explicitly connects the article to investment decision-making for {subject}.
-</instructions>
-"""
-
-        class TempEvidence(BaseModel):
-            relevance_summary: str
-            facts: List[str]
-            quotes: List[str]
-
-        try:
-            ai_output = await ai_with_dynamic_params(
-                system=config["persona"]
-                + " Your extraction must focus on investment-relevant intelligence that supports VC decision-making.",
-                user=prompt,
-                schema=TempEvidence,
-                model=model,
-                api_key=api_key,
-            )
-            return ArticleEvidence(article_id=article.id, **ai_output.dict())
-        except Exception as e:
-            return None
-
-    extraction_tasks = [extract_evidence(article) for article in source_articles]
-    article_evidence_results = await run_in_batches(
-        extraction_tasks, AI_CALL_CONCURRENCY_LIMIT
-    )
-    article_evidence: List[ArticleEvidence] = [
-        ev for ev in article_evidence_results if ev
-    ]
-
-    # --- 3. Synthesize Final Intel from Structured Evidence ---
-    evidence_context = "\n".join(
-        [
-            f"<evidence source_id='{ev.article_id}' relevance='{ev.relevance_summary}'>\n<facts>{'</fact><fact>'.join(ev.facts)}</facts>\n<quotes>{'</quote><quote>'.join(ev.quotes)}</quotes>\n</evidence>"
-            for ev in article_evidence
-        ]
-    )
-
-    synthesis_prompt = f"""
-<task>
-You are a {stream_type} Intelligence Synthesist at a premier VC firm. Your mission is to synthesize structured evidence into actionable {stream_type.lower()} intelligence for investment decision-making.
-</task>
-
-<research_context>
-<investment_target>{subject}</investment_target>
-<key_research_question>{key_question}</key_research_question>
-<intelligence_stream>{stream_type} Analysis</intelligence_stream>
-</research_context>
-
-<synthesis_framework>
-<investment_lens>
-All analysis must be framed through investment considerations:
-- Market opportunity size and timing
-- Business model viability and scalability
-- Competitive positioning and differentiation
-- Team execution capability and track record
-- Technology moats and intellectual property
-- Risk factors and potential failure modes
-</investment_lens>
-
-<evidence_integration>
-Synthesize evidence to populate the required {stream_type} intelligence fields:
-- Base ALL conclusions on the provided structured evidence
-- Cross-reference facts across multiple sources for validation
-- Identify patterns and themes across the evidence base
-- Flag contradictions or uncertainty where evidence conflicts
-- Quantify insights where possible (market sizes, growth rates, etc.)
-</evidence_integration>
-</synthesis_framework>
-
-<structured_evidence>
-{evidence_context}
-</structured_evidence>
-
-<instructions>
-Synthesize the structured evidence above into comprehensive {stream_type.lower()} intelligence. Ensure every field in your response is grounded in the provided evidence. If evidence is insufficient for a field, explicitly state "Evidence insufficient" rather than speculating.
-
-Focus on actionable insights that would inform an investment committee's decision on {subject}.
-</instructions>
-"""
-
-    synthesized_intel = await ai_with_dynamic_params(
-        system=config["persona"]
-        + " You synthesize evidence into actionable VC intelligence, basing all conclusions strictly on provided evidence.",
-        user=synthesis_prompt,
-        schema=config["schema"],
-        model=model,
-        api_key=api_key,
-    )
-
-    # Show what we discovered in this stream
-    if article_evidence:
-        sample_insights = []
-        for ev in article_evidence[:2]:
-            if ev.facts:
-                sample_insights.append(ev.facts[0][:50] + "...")
-        insights_preview = " | ".join(sample_insights)
-        app.note(f"Found key insights about {subject}: {insights_preview}")
-    else:
-        app.note(f"Completed {stream_type.lower()} analysis of {subject}")
-
-    return StreamOutput(
-        stream_type=stream_type,
-        synthesized_intel=synthesized_intel.dict(),
-        source_articles=source_articles,
-        article_evidence=article_evidence,
-    )
-
-
-@app.reasoner()
-async def synthesize_investment_hypothesis(
-    query: str,
-    market_intel: MarketIntel,
-    business_intel: BusinessIntel,
-    network_intel: NetworkIntel,
-    technical_intel: TechnicalIntel,
-    model: Optional[str] = None,
-    api_key: Optional[str] = None,
-) -> InvestmentHypothesis:
-    """Phase 3: Synthesizes findings from all streams into a unified investment hypothesis."""
-    # Show what we're synthesizing
-    key_elements = []
-    if market_intel.key_market_drivers:
-        key_elements.append(f"market drivers like {market_intel.key_market_drivers[0]}")
-    if business_intel.revenue_traction_indicators:
-        key_elements.append(
-            f"traction signals including {business_intel.revenue_traction_indicators[0]}"
-        )
-
-    elements_context = " and ".join(key_elements[:2])
-    if elements_context:
-        app.note(f"Connecting the dots between {elements_context}…")
-    else:
-        app.note("Synthesizing our research findings…")
-
-    prompt = f"""
-<task>
-You are a General Partner at a VC firm leading an investment committee meeting. You have just heard from your four analyst teams (Market, Business, Network, Technical). Your job is to synthesize all their findings into a clear, actionable investment hypothesis.
-</task>
-
-<original_research_query>{query}</original_research_query>
-
-<analyst_briefings>
-<market_intelligence>
-- Market Size: {market_intel.market_size_summary}
-- Key Drivers: {', '.join(market_intel.key_market_drivers)}
-- Competition: {market_intel.competitive_landscape_summary}
-- Regulation: {market_intel.regulatory_snapshot}
-</market_intelligence>
-
-<business_intelligence>
-- Business Model: {business_intel.business_model_summary}
-- Traction: {', '.join(business_intel.revenue_traction_indicators)}
-- GTM Strategy: {business_intel.go_to_market_strategy}
-</business_intelligence>
-
-<network_intelligence>
-- Team: {', '.join(network_intel.key_personnel_backgrounds)}
-- Investors: {network_intel.investor_syndicate_quality}
-- Partnerships: {', '.join(network_intel.strategic_partnerships)}
-</network_intelligence>
-
-<technical_intelligence>
-- Technology: {technical_intel.tech_stack_summary}
-- Differentiation: {', '.join(technical_intel.product_differentiation)}
-- IP Position: {technical_intel.ip_position_summary}
-</technical_intelligence>
-</analyst_briefings>
-
-<instructions>
-1.  **Formulate Core Thesis**: Write a single, concise sentence that acts as a testable investment hypothesis. It should state the primary reason to either invest or pass. (e.g., "We should invest because the company's proprietary tech creates a strong moat in a rapidly growing market.")
-2.  **Identify Supporting Strengths**: List the top 3-4 most compelling points from the briefings that support your thesis.
-3.  **Identify Counter Risks**: List the top 3-4 most significant weaknesses or threats that could invalidate your thesis.
-4.  **Define Key Unknowns**: What are the most critical pieces of information still missing that you would need before making a final decision? These will guide the next phase of research.
-</instructions>
-"""
-    return await ai_with_dynamic_params(
-        system="You are a VC General Partner synthesizing analyst reports into a clear investment thesis.",
-        user=prompt,
-        schema=InvestmentHypothesis,
-        model=model,
-        api_key=api_key,
-    )
-
-
-@app.reasoner()
-async def decide_research_trajectory(
-    hypothesis: InvestmentHypothesis,
-    model: Optional[str] = None,
-    api_key: Optional[str] = None,
-) -> TrajectoryDecision:
-    """Phase 4: Acts as the dynamic router, deciding what to do next based on the hypothesis."""
-    # Show what we're evaluating
-    unknowns_preview = ""
-    if hypothesis.key_unknowns:
-        unknowns_preview = f" — need to explore {hypothesis.key_unknowns[0][:40]}..."
-    app.note(f"Evaluating research progress{unknowns_preview}")
-
-    prompt = f"""
-<task>
-You are a Meta-Cognitive Research Strategist. Your job is to analyze an investment hypothesis and determine the most effective next step to improve its quality and confidence.
-</task>
-
-<current_hypothesis>
-- **Thesis**: {hypothesis.core_thesis}
-- **Strengths**: {hypothesis.supporting_strengths}
-- **Risks**: {hypothesis.counter_risks}
-- **Unknowns**: {hypothesis.key_unknowns}
-</current_hypothesis>
-
-<next_step_options>
-- **Deep_Dive**: Choose this if the `key_unknowns` are specific, factual questions that can be answered with more targeted research. This is for filling known gaps.
-- **Multi_Perspective_Analysis**: Choose this if the hypothesis is well-formed but contentious, with strong points on both sides (strengths vs. risks). This is for exploring the upside and downside scenarios.
-- **Final_Synthesis**: Choose this if the evidence is overwhelming, the risks are minimal, and the unknowns are minor. This means the research is largely complete.
-</next_step_options>
-
-<instructions>
-1.  Analyze the `<current_hypothesis>`. Pay close attention to the `key_unknowns`.
-2.  Choose the most logical `next_step` from the options provided.
-3.  Write a brief `rationale` explaining your choice.
-4.  List the most important questions from the `key_unknowns` or `risks` as `focus_areas` for the next step.
-</instructions>
-"""
-    return await ai_with_dynamic_params(
-        system="You are a research strategist determining the next logical step in an investigation.",
-        user=prompt,
-        schema=TrajectoryDecision,
-        model=model,
-        api_key=api_key,
-    )
-
-
-@app.reasoner()
-async def execute_deep_dive(
-    focus_areas: List[str],
-    initial_context: str,
-    model: Optional[str] = None,
-    api_key: Optional[str] = None,
-) -> List[ArticleEvidence]:
-    """Phase 5a: Conducts targeted research to fill specific knowledge gaps."""
-    focus_preview = focus_areas[0] if focus_areas else "key questions"
-    app.note(f"Exploring {focus_preview} in more detail…")
-
-    # 1. Generate targeted search queries
-    class GeneratedQueries(BaseModel):
-        queries: List[str]
-
-    query_gen_prompt = f"Generate 2-3 precise search queries to find factual answers for these topics: {', '.join(focus_areas)}. The queries should be optimized for finding specific data, not general articles."
-
-    generated_queries = await ai_with_dynamic_params(
-        system="You are a search query generation expert for financial and technical diligence. Remember, make sure to add sources one or two of them in the search query as well. For instance, if a scientific use archive, if it is market use something, you know, you don't need to add everything just mention the site name and that should be fine, like 'carbon nano tube' ar5iv.labs.arxiv.org or something remember we are using Jina ai search so make it such that the query is searchable in public internet if you are not sure about good sources then dont add and it can come up on its own",
-        user=query_gen_prompt,
-        schema=GeneratedQueries,
-        model=model,
-        api_key=api_key,
-    )
-
-    # 2. Perform searches and gather content
-    search_tasks = [search_web_for_content(q) for q in generated_queries.queries]
-    search_results_lists = await asyncio.gather(*search_tasks)
-    all_results = [item for sublist in search_results_lists for item in sublist]
-    unique_articles_map = {
-        article["url"]: article for article in all_results if "url" in article
-    }
-
-    # 3. Extract evidence from new sources
-    class EvidenceList(BaseModel):
-        evidence: List[str]
-
-    evidence_extraction_tasks = []
-    articles_for_evidence = list(unique_articles_map.values())[
-        :5
-    ]  # Limit to top 5 new articles
-
-    for i, article in enumerate(articles_for_evidence):
-        extract_prompt = f"""
-<task>You are an Intelligence Analyst extracting specific facts.</task>
-<topics_of_interest>{', '.join(focus_areas)}</topics_of_interest>
-<article_content>{article.get('content', '')[:4000]}</article_content>
-<instructions>Extract a list of direct facts or data points from the article that are highly relevant to the topics of interest. Ignore general information.</instructions>
-"""
-        evidence_extraction_tasks.append(
-            ai_with_dynamic_params(
-                system="Extract specific, relevant facts from text.",
-                user=extract_prompt,
-                schema=EvidenceList,
-                model=model,
-                api_key=api_key,
-            )
-        )
-
-    extracted_facts_results = await run_in_batches(
-        evidence_extraction_tasks, AI_CALL_CONCURRENCY_LIMIT
-    )
-
-    # 4. Format as ArticleEvidence
-    new_evidence = []
-    for i, result in enumerate(extracted_facts_results):
-        if result and articles_for_evidence[i]:
-            article_ref = articles_for_evidence[i]
-            article_id = i + 1000  # Avoid collision with initial IDs
-            new_evidence.append(
-                ArticleEvidence(
-                    article_id=article_id,
-                    relevance_summary=f"Deep dive fact-finding for topics: {', '.join(focus_areas)}.",
-                    facts=result.evidence,
-                    quotes=[],
-                )
-            )
-            # We would also create and add the Article object here in a real implementation
-
-    # Show what we discovered in the deep dive
-    if new_evidence and new_evidence[0].facts:
-        sample_finding = new_evidence[0].facts[0][:60] + "..."
-        app.note(f"Deep dive complete — found insights like: {sample_finding}")
-    else:
-        app.note(
-            f"Deep dive complete — gathered {len(new_evidence)} additional data points"
-        )
-    return new_evidence
-
-
-@app.reasoner()
-async def execute_multi_perspective_analysis(
-    hypothesis: InvestmentHypothesis,
-    model: Optional[str] = None,
-    api_key: Optional[str] = None,
-) -> BullBearBaseCase:
-    """Phase 5b: Generates bull, bear, and base cases based on the existing hypothesis."""
-    # Show what scenarios we're exploring
-    strength_preview = (
-        hypothesis.supporting_strengths[0][:50] + "..."
-        if hypothesis.supporting_strengths
-        else "key strengths"
-    )
-    risk_preview = (
-        hypothesis.counter_risks[0][:50] + "..."
-        if hypothesis.counter_risks
-        else "potential risks"
-    )
-    app.note(f"Modeling scenarios from {strength_preview} to {risk_preview}…")
-
-    prompt = f"""
-<task>
-You are a seasoned VC Partner playing devil's advocate in an investment committee. Your role is to articulate the bull, bear, and base case scenarios for a potential investment based on an existing hypothesis.
-</task>
-
-<current_hypothesis>
-- **Thesis**: {hypothesis.core_thesis}
-- **Strengths**: {hypothesis.supporting_strengths}
-- **Risks**: {hypothesis.counter_risks}
-</current_hypothesis>
-
-<instructions>
-Based *only* on the hypothesis provided, write a concise summary for each of the following scenarios:
-1.  **bull_case_summary**: The most optimistic outcome. Extrapolate from the `Strengths`. What is the absolute best-case scenario if everything goes right?
-2.  **bear_case_summary**: The most pessimistic outcome. Extrapolate from the `Risks`. What does failure look like, and what are the primary causes?
-3.  **base_case_summary**: The most realistic, probabilistic outcome. Synthesize the strengths and risks into the most likely trajectory for the company.
-</instructions>
-"""
-    return await ai_with_dynamic_params(
-        system="You are a VC Partner articulating bull, bear, and base case investment scenarios.",
-        user=prompt,
-        schema=BullBearBaseCase,
+        schema=ResearchHypothesis,  # Reuse schema but make it domain-adaptive
         model=model,
         api_key=api_key,
     )
@@ -2068,20 +1230,6 @@ Make continuation decision based on current research quality vs. requirements an
         model=model,
         api_key=api_key,
     )
-
-
-def format_hypothesis_as_probes(hypothesis: InvestmentHypothesis) -> List[InquiryProbe]:
-    """Helper to convert hypothesis unknowns into standard 'InquiryProbe' objects."""
-    probes = []
-    for unknown in hypothesis.key_unknowns:
-        probes.append(
-            InquiryProbe(
-                question=f"Investigate the key unknown: {unknown}",
-                rationale="This was identified as a critical gap in the initial investment hypothesis.",
-                suggested_method="Targeted web search for specific data points, financial reports, or technical documentation.",
-            )
-        )
-    return probes
 
 
 @app.reasoner()
@@ -2996,7 +2144,7 @@ async def continue_research(
 @app.reasoner()
 async def generate_adaptive_inquiry_probes(
     query: str,
-    hypothesis: InvestmentHypothesis,
+    hypothesis: ResearchHypothesis,
     entities: List[Entity],
     relationships: List[Relationship],
     model: Optional[str] = None,
@@ -3137,7 +2285,7 @@ Prioritize probes that would most significantly impact confidence in the hypothe
 @app.reasoner()
 async def classify_query_adaptive(
     query: str, model: Optional[str] = None, api_key: Optional[str] = None
-) -> VCQueryClassification:
+) -> QueryClassification:
     """Adaptive query classification that determines optimal research approach for any domain."""
 
     temporal_context = get_temporal_context("classification")
@@ -3206,7 +2354,7 @@ Make the classification adaptive to any domain while maintaining analytical rigo
     return await ai_with_dynamic_params(
         system="You are a Meta-Research Strategy Classifier who determines optimal intelligence gathering approaches for any domain. You specialize in identifying research intent and designing comprehensive investigation strategies.",
         user=prompt,
-        schema=VCQueryClassification,  # Reuse schema but treat it as universal
+        schema=QueryClassification,  # Reuse schema but treat it as universal
         model=model,
         api_key=api_key,
     )
@@ -3712,43 +2860,43 @@ async def generate_research_briefing(
         )
 
     # Define the parallelizable helper reasoners for briefing generation
-    async def generate_vc_claim(pkg: UniversalResearchPackage) -> Any:
+    async def generate_claim(pkg: UniversalResearchPackage) -> Any:
         class Claim(BaseModel):
             claim: str
             impact: str
 
         prompt = f"""
-You are a VC Partner summarizing the key takeaway for an investment committee.
+Summarize the key takeaway from this research.
 Based on the following thesis, distill it into a sharp, declarative 'claim' and a single 'impact' sentence.
 **Thesis:** {pkg.core_thesis}
 **Supporting Points:** {pkg.observed_causal_chains}
 **Risks:** {pkg.hypothesized_implications}
 """
         return await ai_with_dynamic_params(
-            system="You are a top-tier VC Partner.",
+            system="You are a research analyst synthesizing findings.",
             user=prompt,
             schema=Claim,
             model=model,
             api_key=api_key,
         )
 
-    async def extract_vc_evidence(pkg: UniversalResearchPackage) -> Any:
+    async def extract_key_evidence(pkg: UniversalResearchPackage) -> Any:
         class EvidenceList(BaseModel):
             evidence: List[Evidence]
 
         prompt = f"""
-From the following key discoveries, extract the 3 most compelling and distinct facts as evidence points. For each, create a short 'sourceNote' (e.g., 'Market Analysis', 'Technical Diligence').
+From the following key discoveries, extract the 3 most compelling and distinct facts as evidence points. For each, create a short 'sourceNote' (e.g., 'Market Analysis', 'Technical Assessment').
 **Discoveries:** {pkg.key_discoveries}
 """
         return await ai_with_dynamic_params(
-            system="You are a VC Analyst extracting key evidence.",
+            system="You are a research analyst extracting key evidence.",
             user=prompt,
             schema=EvidenceList,
             model=model,
             api_key=api_key,
         )
 
-    async def propose_diligence_questions(pkg: UniversalResearchPackage) -> Any:
+    async def propose_followup_questions(pkg: UniversalResearchPackage) -> Any:
         # Reusing the user's original briefing schemas for this part
         class NextProbeList(BaseModel):
             """A list of suggested next probes for investigation."""
@@ -3758,8 +2906,8 @@ From the following key discoveries, extract the 3 most compelling and distinct f
         if not pkg.next_inquiry_probes:
             return NextProbeList(nextProbes=[])
         prompt = f"""
-Convert these internal diligence questions into short, user-facing probes for the next round of investigation. The first one should be marked for auto-opening.
-**Diligence Questions:** {[p.question for p in pkg.next_inquiry_probes]}
+Convert these research questions into short, user-facing probes for the next round of investigation. The first one should be marked for auto-opening.
+**Research Questions:** {[p.question for p in pkg.next_inquiry_probes]}
 """
 
         # This is a simplified call; a more robust version would use the full logic from your original code
@@ -3796,9 +2944,9 @@ Convert these internal diligence questions into short, user-facing probes for th
         return NextProbeList(nextProbes=full_probes)
 
     # Run all briefing tasks in parallel
-    claim_task = generate_vc_claim(pkg)
-    evidence_task = extract_vc_evidence(pkg)
-    probes_task = propose_diligence_questions(pkg)
+    claim_task = generate_claim(pkg)
+    evidence_task = extract_key_evidence(pkg)
+    probes_task = propose_followup_questions(pkg)
 
     claim_and_impact, evidence_list, probe_list = await asyncio.gather(
         claim_task, evidence_task, probes_task
