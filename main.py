@@ -65,6 +65,7 @@ app = Agent(
     version="3.0.0",
     dev_mode=True,
     callback_url=os.getenv("AGENT_CALLBACK_URL", None),
+    api_key=os.getenv("AGENTFIELD_API_KEY", None),
     ai_config=ai_config,
 )
 
