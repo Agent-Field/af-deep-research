@@ -5,6 +5,7 @@
 <p align="center">
   <a href="https://github.com/Agent-Field/af-deep-research/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache%202.0-blue.svg" alt="License"></a>
   <a href="https://github.com/Agent-Field/agentfield"><img src="https://img.shields.io/badge/built%20on-AgentField-8A2BE2" alt="Built on AgentField"></a>
+  <a href="https://github.com/Agent-Field"><img src="https://img.shields.io/badge/More_from-Agent--Field-111827?logo=github" alt="More from Agent-Field"></a>
   <a href="https://discord.com/invite/aBHaXMkpqh"><img src="https://img.shields.io/badge/Discord-Join-7289da" alt="Discord"></a>
 </p>
 <p align="center"><b>Early Preview</b> · APIs may change. Feedback welcome.</p>
@@ -160,6 +161,8 @@ Multiple parallel streams explore different angles simultaneously. Each stream f
 | **Integration** | Copy-paste from chat | REST API, SSE streaming, webhook-ready |
 | **Deployment** | SaaS only | Self-host with local LLMs, air-gapped option |
 
+> **From research to action:** [Contract-AF](https://github.com/Agent-Field/contract-af) uses the same recursive multi-agent pattern to analyze legal contracts — agents spawn agents at runtime based on what they discover.
+
 ### Why it works
 
 - **Context pollution kills quality.** When you dump 50 web pages into an LLM, important facts get buried and the model hallucinates connections. We filter aggressively—hash dedup, semantic dedup, relevance scoring—so only the best evidence reaches synthesis.
@@ -298,6 +301,16 @@ Runs on [AgentField](https://github.com/Agent-Field/agentfield), open-source inf
 
 This is an early preview. We're actively developing and want feedback. File issues, open PRs, or come chat in [Discord](https://discord.com/invite/aBHaXMkpqh).
 
+---
+
+### Also built on AgentField
+
+> **[Contract-AF](https://github.com/Agent-Field/contract-af)** — Legal contract risk analyzer. Agents spawn agents at runtime. Adversarial review catches what solo LLMs miss.
+>
+> **[Reactive Atlas](https://github.com/Agent-Field/af-reactive-atlas-mongodb)** — Turn any MongoDB collection into an AI intelligence layer. Config-driven, zero application code.
+
+[All repos →](https://github.com/Agent-Field)
+
 <p align="center">
-  <sub>Built by <a href="https://agentfield.ai">AgentField</a> · <a href="https://github.com/Agent-Field/af-deep-research/blob/main/LICENSE">Apache 2.0</a></sub>
+  <sub>Built by <a href="https://agentfield.ai">AgentField</a> · <a href="https://github.com/Agent-Field/af-deep-research/blob/main/LICENSE">Apache 2.0</a> · <a href="https://github.com/Agent-Field">See what else we're building →</a></sub>
 </p>
