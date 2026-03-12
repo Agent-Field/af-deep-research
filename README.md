@@ -48,9 +48,8 @@ Returns a structured research package — entities, relationships, evidence, and
 
 ```bash
 git clone https://github.com/Agent-Field/af-deep-research.git && cd af-deep-research
-cp .env.example .env
-# Add API keys to .env
-docker-compose -f docker-compose.hub.yml up -d
+cp .env.example .env          # Add OPENROUTER_API_KEY + at least one search provider key
+docker compose up --build
 ```
 
 ```bash
