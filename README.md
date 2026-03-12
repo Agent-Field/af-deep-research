@@ -12,7 +12,37 @@
 
 ---
 
-A research API that questions itself. Submit a query. The system spawns parallel agents, evaluates what it found against quality thresholds, generates new sub-queries when gaps are detected, and runs another cycle. The architecture orchestrates ~10,000 logical agent invocations per research. This is an [AI backend](https://www.agentfield.ai/blog/posts/ai-backend), not a chat interface. Built on top of [agentfield](https://github.com/Agent-Field/agentfield) runtime for orchestrating the agents. 
+A research API that questions itself. Submit a query. The system spawns parallel agents, evaluates what it found against quality thresholds, generates new sub-queries when gaps are detected, and runs another cycle. The architecture orchestrates ~10,000 logical agent invocations per research. This is an [AI backend](https://www.agentfield.ai/blog/posts/ai-backend), not a chat interface. Built on top of [agentfield](https://github.com/Agent-Field/agentfield) runtime for orchestrating the agents.
+
+## One-Call DX
+
+```bash
+curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execute_deep_research \
+  -H "Content-Type: application/json" \
+  -d '{"input": {"query": "What companies are investing in AI chips?"}}'
+```
+
+Returns a structured research package — entities, relationships, evidence, and a full cited document:
+
+```jsonc
+{
+  "entities": [
+    {"name": "NVIDIA", "type": "Company", "summary": "Dominant AI chip maker, 80%+ datacenter GPU share"},
+    {"name": "Sequoia Capital", "type": "Investor", "summary": "Early NVIDIA investor, major AI fund"},
+    {"name": "H100", "type": "Technology", "summary": "Flagship AI training GPU, $30k+ ASP"}
+  ],
+  "relationships": [
+    {"source": "AMD", "target": "NVIDIA", "type": "Competes_With"},
+    {"source": "Sequoia Capital", "target": "NVIDIA", "type": "Invests_In"},
+    {"source": "Microsoft", "target": "OpenAI", "type": "Partners_With"}
+  ],
+  "article_evidence": [{"facts": ["NVIDIA datacenter revenue reached $18.4B in Q4"], "quotes": ["We are seeing unprecedented demand - Jensen Huang"]}],
+  "document": {"sections": ["...full hierarchical report with inline citations..."]},
+  "metadata": {"iterations_completed": 3, "total_entities": 47, "total_relationships": 89, "final_quality_score": 0.91}
+}
+```
+
+~10,000 agent invocations. Self-correcting research loops. One API call.
 
 ## Quick start
 
