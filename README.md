@@ -62,6 +62,40 @@ Returns `execution_id`. Stream progress via SSE, fetch results when complete.
 
 > Open [localhost:8080/ui](http://localhost:8080/ui) to watch the workflow live.
 
+### Run locally (without Docker)
+
+You can run AF Deep Research directly as a Python app without the AgentField control plane managing async dispatch. It will execute synchronously.
+
+**1. Create a virtual environment and install dependencies:**
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -e .
+```
+
+**2. Set a writable working directory:**
+
+By default, AF Deep Research writes workspace files to `/workspaces`, which requires root access. Override this with the `PR_AF_WORKDIR` environment variable:
+
+```bash
+export PR_AF_WORKDIR=/tmp/pr-af-workdir
+```
+
+**3. Configure your environment and start the agent:**
+
+```bash
+cp .env.example .env   # Add OPENROUTER_API_KEY + at least one search provider key
+python3 main.py
+```
+
+**4. Submit a query (in a separate terminal):**
+
+```bash
+curl -X POST http://localhost:8080/api/v1/execute/async/meta_deep_research.execute_deep_research \
+  -H "Content-Type: application/json" \
+  -d '{"input": {"query": "What companies are investing in AI chips?"}}'
+```
+
 ## Output
 
 The API returns a research package with five components:
